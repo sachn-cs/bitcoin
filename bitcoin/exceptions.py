@@ -1,81 +1,67 @@
-"""Exception types for Bitcoin parsing and extraction."""
-
-from __future__ import annotations
-
-__all__ = [
-    "BitcoinError",
-    "InvalidDerSignatureError",
-    "InvalidHexError",
-    "InvalidLinearCoefficientError",
-    "InvalidSecPublicKeyError",
-    "InvalidSecp256k1PointError",
-    "InvalidSighashFlagError",
-    "LinearCoefficientError",
-    "MalformedVarintError",
-    "MissingInputValueError",
-    "NonInvertibleLinearCoefficientError",
-    "ScriptParseError",
-    "TruncatedTransactionError",
-    "UnsupportedScriptPathError",
-    "UnsupportedTransactionError",
-]
+"""Exception types for the bitcoin package."""
 
 
-class BitcoinError(Exception):
-    """Base class for Bitcoin package errors."""
+class NotInvertible(ValueError):
+    """Raised when a value is not invertible in the given finite field."""
 
 
-class InvalidHexError(BitcoinError):
-    """Raised when a transaction hex string is malformed."""
+class PointError(ValueError):
+    """Raised for invalid curve-point operations."""
 
 
-class TruncatedTransactionError(BitcoinError):
-    """Raised when transaction bytes end unexpectedly."""
+class InvalidSignature(ValueError):
+    """Raised when a signature is malformed or cannot be decoded."""
 
 
-class MalformedVarintError(BitcoinError):
-    """Raised when a compact size integer is invalid."""
+class InvalidDerSignature(ValueError):
+    """Raised specifically for malformed DER-encoded signatures."""
 
 
-class UnsupportedTransactionError(BitcoinError):
-    """Raised when a transaction uses an unsupported structure."""
+class ParsingError(ValueError):
+    """Raised when binary parsing fails."""
 
 
-class UnsupportedScriptPathError(BitcoinError):
-    """Raised when a transaction uses an unsupported script path."""
+class InvalidSecp256k1PointError(ValueError):
+    """Raised for invalid secp256k1 point operations."""
 
 
-class InvalidDerSignatureError(BitcoinError):
-    """Raised when a signature does not satisfy strict DER rules."""
+# ── Exception classes preserved from the original codebase ───────────
+class NotInvertibleError(ValueError):
+    """Raised when a linear coefficient is not invertible."""
 
 
-class InvalidSighashFlagError(BitcoinError):
-    """Raised when a signature hash flag is unsupported."""
+class InvalidLinearCoefficientError(ValueError):
+    """Raised for invalid linear coefficients."""
 
 
-class MissingInputValueError(BitcoinError):
-    """Raised when SegWit extraction needs an input value that is unavailable."""
+class NonInvertibleLinearCoefficientError(ValueError):
+    """Raised when a linear coefficient cannot be inverted."""
 
 
-class ScriptParseError(BitcoinError):
-    """Raised when a script cannot be parsed safely."""
+class NoNonceReuseError(ValueError):
+    """Raised when no nonce reuse is detected."""
 
 
-class LinearCoefficientError(BitcoinError):
-    """Raised when linear coefficient derivation fails."""
+class NonceReuseGroup:
+    """Group of signatures sharing the same nonce."""
 
 
-class InvalidLinearCoefficientError(LinearCoefficientError):
-    """Raised when a signature value is invalid for linearization."""
+class RecoveredKey:
+    """Represents a recovered private key from nonce reuse."""
 
 
-class NonInvertibleLinearCoefficientError(LinearCoefficientError):
-    """Raised when a coefficient has no modular inverse."""
+class SameNonceError(ValueError):
+    """Raised when two signatures share the same nonce."""
 
 
-class InvalidSecp256k1PointError(BitcoinError):
-    """Raised when a secp256k1 point or SEC encoding is invalid."""
-
-
-class InvalidSecPublicKeyError(InvalidSecp256k1PointError):
-    """Raised when SEC public key parsing or serialization fails."""
+# ── Compatibility aliases (old → new) ─────────────────────────────────
+BitcoinError = ValueError
+InvalidDerSignatureError = InvalidDerSignature
+InvalidHexError = ValueError
+InvalidSecPublicKeyError = PointError
+InvalidSighashFlagError = ValueError
+MalformedVarintError = ParsingError
+MissingInputValueError = ValueError
+ScriptParseError = ParsingError
+TruncatedTransactionError = ParsingError
+UnsupportedScriptPathError = ValueError

@@ -1,208 +1,89 @@
 # Data Flow
 
-## Request Flow
-
-### 1. CLI Entry Point
+## CLI Invocation
 
 ```
-CLI invocation
-  → bitcoin.cli.main(args)
-    → logging.basicConfig()
-    → app(args, standalone_mode=False)  (typer)
-      → parse() / extract() / linear() / points() / transform()
-        → _resolve_transaction(tx_hex, input_values)
-          → Transaction.parse_hex(tx_hex)
-          → Transaction.with_input_values(parsed_values)
-        → dispatch to command-specific serializer
+python -m secp extract <tx-hex> [--utxo-script ...] [--utxo-value ...]
+  → cli.app.main()
+    → decode_hex(tx_hex)
+    → parse_tx(tx_bytes)          → (Tx, bytes_consumed)
+    → extract_signatures(tx, script_pubkeys, values)
+      → for each input:
+          parse_script(script_sig) → classify → dispatch
+          → Record(txid, vin, sig, pubkey, type, flag, amount)
+    → print records
 ```
 
-### 2. Transaction Parsing
+## Transaction Parsing
+
+`parse_tx(bytes) → (Tx, bytes_consumed)`
 
 ```
-Transaction.parse_hex(hex_str)
-  │
-  ├─ utils.validate_hex_string()
-  │   ├─ strips whitespace
-  │   ├─ rejects empty / odd-length / non-hex characters
-  │   └─ returns bytes
-  │
-  └─ parser.parse_transaction_bytes(raw_bytes)
-      ├─ ByteReader (utils.py) for bounded reads
-      ├─ version (4 bytes LE)
-      ├─ segwit detection (marker 0x00 + flag != 0x00)
-      ├─ input count (varint) + inputs (41+ bytes each)
-      ├─ output count (varint) + outputs (9+ bytes each)
-      ├─ witness data (if segwit)
-      ├─ locktime (4 bytes LE)
-      └─ trailing bytes check → TruncatedTransactionError
+  ByteReader(raw_bytes)
+  ├── version               (4 bytes LE)
+  ├── segwit detection       (marker 0x00 + flag ≠ 0x00)
+  ├── input count (varint) + inputs (OutPoint + script_sig + sequence + witness)
+  ├── output count (varint) + outputs (value + script_pubkey)
+  ├── witness data (if segwit)
+  ├── locktime              (4 bytes LE)
+  └── trailing bytes check
 ```
 
-### 3. Transaction Structure
+## Signature Extraction
 
 ```
-Transaction
-  ├─ raw_bytes: bytes
-  ├─ version: int
-  ├─ segwit: bool
-  ├─ inputs: tuple[TransactionInput, ...]
-  │     └─ prevout_hash (32 bytes), prevout_index (uint32),
-  │        script_sig (varbytes), sequence (uint32), witness (tuple)
-  ├─ outputs: tuple[TransactionOutput, ...]
-  │     └─ value (uint64), script_pubkey (varbytes)
-  ├─ locktime: int
-  └─ context: TransactionContext | None
-        └─ input_values: tuple[int | None, ...]
-```
-
-### 4. Signature Extraction
-
-```
-Transaction.extract() / extract_signatures()
+extract_signatures(tx, utxo_scripts, utxo_values)
   │
   └─ for each input:
       │
-      ├─ parse_script(txin.script_sig) → ScriptChunk[]
-      ├─ chunks_to_pushes() → bytes[]
-      │
-      ├─ Taproot (witness + script_pubkey is taproot):
-      │   ├─ key-path (1 witness item) → _extract_taproot_key_path
-      │   │   ├─ parse_der_signature(witness[0])
-      │   │   ├─ _resolve_input_value(context, index)
-      │   │   └─ taproot_sighash(...)
-      │   │
-      │   └─ script-path → _extract_taproot_script_path
-      │       ├─ witness[-2] = script, witness[:-2] = signatures
-      │       ├─ parse_script(script) → pubkeys
-      │       └─ taproot_sighash(..., spend_type=0xC0)
+      ├─ parse_script(txin.script_sig) → list of elements
+      ├─ classify_script_pubkey(script_pubkey)
       │
       ├─ Legacy (no witness):
-      │   ├─ P2PKH → _extract_legacy_p2pkh
-      │   │   └─ pushes[0]=sig, pushes[1]=pubkey
-      │   │   └─ legacy_sighash(..., make_p2pkh_script(pubkey))
+      │   ├─ P2PKH: script_sig pushes[0]=sig, pushes[1]=pubkey
+      │   │          sighash = legacy(tx, vin, p2pkh_script, flag)
+      │   │          recover pubkey from sighash + sig
       │   │
-      │   └─ P2SH multisig → _extract_legacy_p2sh_multisig
-      │       └─ pushes[:-1]=sigs, pushes[-1]=redeem script
-      │       └─ legacy_sighash(..., redeem_script)
+      │   └─ P2SH multisig: pushes[:-1]=sigs, pushes[-1]=redeem script
       │
-      ├─ SegWit (no script_sig):
-      │   ├─ P2WPKH → _extract_native_p2wpkh
-      │   │   └─ witness[0]=sig, witness[1]=pubkey
-      │   │   └─ segwit_sighash(..., amount)
+      ├─ SegWit (witness present):
+      │   ├─ P2WPKH: witness[0]=sig, witness[1]=pubkey
+      │   │            sighash = segwit(tx, vin, script_code, value, flag)
       │   │
-      │   └─ P2WSH multisig → _extract_native_p2wsh_multisig
-      │       └─ witness[:-1]=sigs, witness[-1]=script
-      │       └─ segwit_sighash(..., amount)
+      │   ├─ P2WSH: witness[:-1]=sigs, witness[-1]=script
+      │   │
+      │   └─ P2SH-P2WPKH / P2SH-P2WSH:
+      │       script_sig = redeem script, witness has sigs
       │
-      └─ P2SH-wrapped SegWit:
-          ├─ P2SH-P2WPKH → _extract_p2sh_p2wpkh
-          └─ P2SH-P2WSH → _extract_p2sh_p2wsh_multisig
+      └─ Record(..., sighash computed, pubkey recovered)
 ```
 
-### 5. Sighash Computation Flow
+## Sighash Computation
+
+### Legacy
+
+`legacy_sighash(tx, index, script_code, flag)`
+- Parse flag → base_type + anyone_can_pay
+- Check SINGLE + no matching output → return 0x00...01 (consensus sentinel)
+- Substitute `script_code` at current input
+- Serialize: `version || inputs || outputs || locktime || flag`
+- SHA256(SHA256(payload))
+
+### SegWit v0 (BIP-143)
+
+`segwit_sighash(tx, index, script_code, amount, flag)`
+- Validate amount is not None
+- Pre-compute `hash_prevouts`, `hash_sequence`, `hash_outputs`
+- Anyone-can-pay → `hash_prevouts = hash_sequence = 0x00...00`
+- Payload includes amount (prevents fee theft)
+
+## Linearization
 
 ```
-legacy_sighash(tx, index, script_code, flag)
-  ├─ parse_sighash_flag(flag) → _SighashPlan
-  ├─ check SINGLE + no matching output → return 0x00...01
-  ├─ build input_chunks (substitute script_code at current input)
-  ├─ build output_chunks (ALL / SINGLE / NONE dispatch)
-  ├─ serialize version, varint(inputs), varint(outputs), locktime, flag
-  └─ sha256d(payload)
-
-segwit_sighash(tx, index, script_code, amount, flag)
-  ├─ validate amount is not None
-  ├─ parse_sighash_flag(flag) → _SighashPlan
-  ├─ hash_prevouts (all prevouts or 0x00...00 for anyone-can-pay)
-  ├─ hash_sequence (all sequences or 0x00...00)
-  ├─ hash_outputs (ALL/SINGLE/NONE dispatch)
-  └─ serialize + sha256d
-
-taproot_sighash(tx, index, script_code, amount, flag, spks, ...)
-  ├─ validate all input_values are non-None
-  ├─ parse_sighash_flag(flag) → _SighashPlan
-  ├─ sha_prevouts, sha_amounts, sha_scriptpubkeys, sha_sequences
-  ├─ sha_outputs (ALL/SINGLE/NONE dispatch)
-  ├─ hash_annex (0x00...00 if absent)
-  └─ tagged_hash("TapSighash", payload)
-```
-
-### 6. Linearization Flow
-
-```
-SignatureCollection.linear()
-  └─ derive_linear_coefficients(record) per record
-      ├─ parse hex r, s, z → int
-      ├─ validate: r ≠ 0, s ≠ 0, r < n, s < n
-      ├─ r_inverse = inverse_mod(r, SECP256K1_ORDER)
-      ├─ alpha = (s * r_inverse) % n
-      └─ beta = (z * r_inverse) % n
-
-SignatureCollection.linear_points()
-  └─ derive_point_relation(record, pubkey_point)
-      ├─ derive_linear_coefficients(record)
-      ├─ point_b = scalar_multiply(beta, G)
-      ├─ transformed_pk = point_add(pubkey_point, point_b)
-      └─ return LinearPointRelation
-
-SignatureCollection.transform_points()
-  └─ derive_transformed_point(record, pubkey_point)
-      ├─ same as linear_points
-      └─ return TransformedPointRecord
-```
-
-## Batch Processing Flow
-
-### Sequential (default)
-
-```
-batch_process(*txids, mp=False)
-  └─ BatchProcessor.process_txids(txids)
-      └─ for each txid:
-          ├─ fetch_transaction(txid) → HTTP → blockstream.info
-          ├─ optionally attach input values
-          └─ Transaction.extract()
-```
-
-### Parallel (multiprocessing)
-
-```
-batch_process(*txids, mp=True)
-  └─ multiprocessing.Pool
-      └─ pool.map_async(worker, txids).get(timeout)
-          └─ per worker:
-              ├─ fetch_transaction(txid)
-              └─ Transaction.extract()
-```
-
-## PSBT Flow
-
-```
-parse_psbt_hex(hex_str)
-  └─ parse_psbt(raw_bytes)
-      ├─ validate magic bytes "psbt\xff"
-      ├─ parse global map (extract unsigned transaction)
-      ├─ parse input maps (per input in unsigned tx)
-      ├─ parse output maps (per output in unsigned tx)
-      └─ return Psbt
-
-psbt_extract_signatures(psbt, input_values)
-  └─ for each psbt_in with partial_sigs:
-      ├─ witness_utxo present → segwit sighash path
-      ├─ non_witness_utxo present → legacy sighash path
-      ├─ user-provided values → segwit fallback
-      └─ no UTXO data → MissingInputValueError
-```
-
-## Configuration Flow
-
-```
-Config.load(path=None)
-  ├─ if path provided: _load_file(path) → dict
-  │   ├─ file missing → log ERROR, return {}
-  │   └─ unsupported format → log ERROR, return {}
-  ├─ override with env vars: _coerce(raw, type)
-  │   ├─ bool: raw in {"1", "true", "yes"}
-  │   ├─ int: int(raw) → ValueError on failure
-  │   └─ str: raw as-is
-  └─ Config(**kwargs)
+linearize_signatures(records)
+  └─ sort by (txid, vin)
+  └─ for each record:
+      r_inv = inverse_mod(r, CURVE_ORDER)
+      alpha = (s * r_inv) % n
+      beta  = (z * r_inv) % n
 ```

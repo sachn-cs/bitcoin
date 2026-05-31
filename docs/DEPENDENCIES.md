@@ -4,11 +4,18 @@
 
 | Package | Min Version | Purpose | Risk |
 |---------|-------------|---------|------|
-| `typer` | — | CLI framework | Low; well-maintained CLI library |
-| `click` | — | CLI argument parsing (Typer dependency) | Low |
-| `coincurve` | (optional) | C-based ECC via libsecp256k1 bindings | Low; pure-Python fallback exists |
+| `typer` | — | CLI framework | Low; well-maintained |
+| `click` | — | Typer dependency | Low |
 
-Note: HTTP fetches use `urllib.request` from the Python standard library — no `requests` dependency needed.
+HTTP fetches use `urllib.request` from the Python stdlib — no `requests` or external HTTP library.
+
+## Optional
+
+| Package | Purpose |
+|---------|---------|
+| `coincurve` | C-based ECC via libsecp256k1 bindings (`LibsecpBackend`) |
+
+Pure Python backend is always available and the default.
 
 ## Development
 
@@ -16,24 +23,12 @@ Note: HTTP fetches use `urllib.request` from the Python standard library — no 
 |---------|---------|
 | `pytest` | Test runner |
 | `pytest-cov` | Coverage reporting |
-| `pytest-hypothesis` | Property-based testing |
 | `pytest-benchmark` | Benchmarking |
-| `pytest-asyncio` | Async test support |
 | `mypy` | Static type checking |
-| `ruff` | Linting and formatting |
+| `ruff` | Linting |
 
-## Not Installed/Required
+## Not Required
 
-- No cryptographic library dependency for signing or verification — the package only parses and extracts (no private keys).
-- No `asyncio` dependency — the async plugin is only for test isolation.
-- No `numpy` — all arithmetic is pure Python integer/bigint.
-
-## Transitive Risk
-
-- `requests` depends on `urllib3`, `certifi`, `charset-normalizer`, `idna` — all widely deployed and maintained.
-- `typer` depends on `click`, `shellingham`, `rich` (optional) — low risk.
-- `coincurve` depends on `asn1crypto`, `cffi` (for libsecp256k1 C bindings) — low risk; only activated on explicit `set_backend(CoincurveBackend())`.
-
-## Optional Dependency Detection
-
-`CoincurveBackend.__init__()` checks for `coincurve` availability when instantiated. If unavailable, it raises `ImportError` with a message to `pip install coincurve`. The pure-Python backend is always available and is the default.
+- No cryptographic library for signing/verification — package only parses and extracts
+- No `numpy` — all arithmetic is pure Python integer/bigint
+- No `asyncio` — CLI is synchronous
