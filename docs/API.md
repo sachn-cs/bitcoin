@@ -1,263 +1,172 @@
 # API Reference
 
-## Public CLI — `bitcoin.cli`
-
-### Installation
+## CLI — `bitcoin.cli`
 
 ```bash
-pip install bitcoin
-# or with optional coincurve backend:
-pip install "bitcoin[coincurve]"
+python -m secp <command> [options]
 ```
 
-### Commands
+### `extract`
 
-All commands share: `--tx <hex>` (required), `--input-values <csv>` (optional), `--compact` (optional).
-
-#### `parse`
+Parse a raw transaction and extract all ECDSA signatures.
 
 ```bash
-bitcoin parse --tx <raw-transaction-hex>
+python -m secp extract <tx-hex> \
+    [--utxo-script <hex>] \
+    [--utxo-value <int>]
 ```
 
-Output: JSON with `raw_hex`, `version`, `segwit`, `locktime`, `inputs[]`, `outputs[]`.
+Output: per-signature lines with `txid`, `vin`, `sig`, `type`, `flag`, `value`.
 
-#### `extract`
+### `linearize`
+
+Extract and sort signatures by txid then vin.
 
 ```bash
-bitcoin extract --tx <hex> [--input-values 100000,200000]
+python -m secp linearize <tx-hex>
 ```
 
-Output: JSON with `count`, `r[]`, `s[]`, `z[]`, `records[]`.
+### `version`
 
-#### `linear`
+Print installed version.
 
 ```bash
-bitcoin linear --tx <hex> [--input-values 100000,200000]
+python -m secp version
 ```
 
-Output: JSON with `alpha`, `beta`, `equation`, `input_index` per record (or collection).
+---
 
-#### `points`
+## Python SDK
 
-```bash
-bitcoin points --tx <hex> [--input-values 100000,200000]
+All public symbols are available from `bitcoin`:
+
+```python
+import bitcoin
 ```
 
-Output: JSON with `alpha`, `beta`, `equation`, `input_index`, `transformed_public_key` per record.
+### Field Arithmetic
 
-#### `transform`
+```python
+from bitcoin import inverse, sqrt, pow_mod
 
-```bash
-bitcoin transform --tx <hex> [--input-values 100000,200000]
+assert inverse(3, 7) == 5          # 3 * 5 ≡ 1 (mod 7)
+root = sqrt(42**2 % p, p)          # sqrt for p ≡ 3 mod 4
 ```
 
-Output: JSON with `new_d_point`, `validation` per record.
+### Curve Operations
 
-### Exit Codes
+```python
+from bitcoin import Point, GENERATOR, INFINITY, CURVE_ORDER
+from bitcoin import negate, add, double, multiply, is_on_curve
 
-| Code | Condition |
-|------|-----------|
-| 0 | Success |
-| 1 | `BitcoinError`, `ValueError`, or unexpected error |
-| 2 | Usage error (click.ClickException) |
+p = Point(x=1, y=2)                           # affine point
+inf = Point(infinity=True)                     # identity
+assert is_on_curve(GENERATOR)
+neg = negate(GENERATOR)
+double_g = double(GENERATOR)                   # 2G
+ten_g = multiply(10, GENERATOR)                # 10G
 
-## Public Python API
+# SEC encoding
+ser = GENERATOR.to_sec_compressed()            # 33 bytes
+p2 = Point.from_sec_compressed(ser)
+```
+
+### Backend Selection
+
+```python
+from bitcoin import set_backend, get_backend, NativeBackend, LibsecpBackend
+
+set_backend(NativeBackend())                   # pure Python (default)
+# set_backend(LibsecpBackend())                # C-backed (pip install coincurve)
+```
 
 ### Transaction Parsing
 
 ```python
-from bitcoin.transaction import Transaction
+from bitcoin import parse_tx, Tx, TxIn, TxOut, OutPoint, Witness, make_tx
 
-# Parse from hex
-tx = Transaction.parse_hex(raw_transaction_hex)
+# Parse raw bytes
+tx_bytes = bytes.fromhex("<hex>")
+tx, consumed = parse_tx(tx_bytes)              # → (Tx, int)
 
-# Attach input values for SegWit sighash
-tx = tx.with_input_values([100000, 200000])
-# Raises ValueError if len(values) != len(tx.inputs)
+# Inspect
+tx.version                                     # int
+tx.inputs                                      # tuple[TxIn, ...]
+tx.outputs                                     # tuple[TxOut, ...]
+tx.lock_time                                   # int
+tx.txid()                                      # bytes (LE double-SHA256)
+tx.is_segwit()                                 # bool
 
-# Extract signatures
-sig_collection = tx.extract()
-# Optional: provide script_pubkeys for Taproot detection
-sig_collection = tx.extract(script_pubkeys=[pubkey_bytes, ...])
+# Build
+tx = make_tx(version=2, inputs=[...], outputs=[...])
 ```
 
-### Signature Collection
+### Signature Extraction
 
 ```python
-from bitcoin.signature import SignatureCollection
+from bitcoin import extract_signatures, Record
 
-# Properties
-sig_collection.records    # tuple[SignatureRecord, ...]
-sig_collection.r          # list[str]  (hex)
-sig_collection.s          # list[str]  (hex)
-sig_collection.z          # list[str]  (hex)
-sig_collection.signatures # list[SignatureRecord]
+records = extract_signatures(tx)               # → list[Record]
 
-# Derived operations
-coeffs = sig_collection.linear()           # → LinearCoefficientCollection
-points = sig_collection.linear_points()    # → LinearPointRelationCollection
-transformed = sig_collection.transform_points()  # → TransformedPointCollection
+for rec in records:
+    rec.txid                                    # bytes (32)
+    rec.vin                                     # int
+    rec.sig                                     # bytes (DER without sighash)
+    rec.public_key                              # Point | bytes | None
+    rec.script_type                             # str ("p2pkh", "p2wpkh", ...)
+    rec.sighash_flag                            # int
+    rec.amount                                  # int (sats)
 ```
 
-### Nonce Reuse & Key Recovery
+### Signature Verification
 
 ```python
-from bitcoin.attack import (
-    detect_nonce_reuse, recover_from_nonce_reuse,
-    recover_from_related_nonces, NonceReuseGroup, RecoveredKey,
-)
-from bitcoin.signature import SignatureCollection
+from bitcoin import verify_sig, linearize_signatures
 
-# Detect if any signatures share the same nonce (same r value)
-collection: SignatureCollection = tx.extract()
-groups: list[NonceReuseGroup] = detect_nonce_reuse(collection)
+assert verify_sig(message_hash, der_sig, public_key)
 
-# Recover private key from two signatures with same nonce
-if groups:
-    group = groups[0]
-    result: RecoveredKey = recover_from_nonce_reuse(
-        collection.records[group.indices[0]],
-        collection.records[group.indices[1]],
-    )
-    # result.private_key, result.nonce
-
-# Recover from related nonces k₂ = k₁ + δ
-result = recover_from_related_nonces(
-    collection.records[0],
-    collection.records[1],
-    delta=1,
-)
-```
-
-### ECC Point Operations
-
-```python
-from bitcoin.ecc import (
-    Secp256k1Point, G, SECP256K1_INFINITY,
-    point_negate, point_add, point_double, scalar_multiply,
-    is_on_curve, field_sqrt,
-    parse_sec_public_key, serialize_sec_public_key,
-)
-
-# Create points
-inf = Secp256k1Point(infinity=True)
-p = Secp256k1Point(x=123, y=456, infinity=False)
-
-# Operations
-neg = point_negate(p)
-sum_pt = point_add(p, q)
-dbl = point_double(p)
-mult = scalar_multiply(5, G)
-
-# Encoding
-sec_bytes = serialize_sec_public_key(p, compressed=True)
-p2 = parse_sec_public_key(sec_bytes)
-```
-
-### Backend Configuration
-
-```python
-from bitcoin.ecc_backend import set_backend, get_backend
-from bitcoin.coincurve_backend import CoincurveBackend
-
-# Activate coincurve backend (requires `pip install coincurve`)
-set_backend(CoincurveBackend())
-
-# Check current backend
-backend = get_backend()  # → EccBackend | None
-
-# Reset to pure Python (default — just don't call set_backend)
-```
-
-### Batch Processing
-
-```python
-from bitcoin.batch import BatchProcessor, batch_process
-
-# Sequential
-processor = BatchProcessor(network="mainnet", timeout=30)
-results = processor.process_txids(["txid1", "txid2"])
-
-# Lazy streaming
-for txid, collection in processor.process_txids_iter(["txid1", "txid2"]):
-    print(txid, collection)
-
-# Convenience (parallel)
-results = batch_process("txid1", "txid2", mp=True)
+sorted_recs = linearize_signatures(records)     # sort by (txid, vin)
 ```
 
 ### PSBT
 
 ```python
-from bitcoin.psbt import parse_psbt_hex, parse_psbt, psbt_extract_signatures
+from bitcoin import parse_psbt, serialize_psbt, Psbt
 
-psbt = parse_psbt_hex(psbt_hex_string)
-# or
-psbt = parse_psbt(raw_bytes)
+psbt = parse_psbt(raw_bytes)                   # → Psbt
+psbt.unsigned_tx                                # Tx
+psbt.inputs                                     # tuple[PsbtInput, ...]
+psbt.outputs                                    # tuple[PsbtOutput, ...]
 
-sigs = psbt_extract_signatures(psbt, input_values=[100000, 200000])
+# Re-serialize
+raw = serialize_psbt(psbt)
 ```
 
-### Fetcher
+### Hashing
 
 ```python
-from bitcoin.fetcher import (
-    fetch_transaction_hex, fetch_transaction,
-    fetch_address_transactions, fetch_address_utxos,
-    fetch_and_extract,
-)
+from bitcoin import sha256, hash256, hash160, tagged_hash
 
-hex_str = fetch_transaction_hex("txid", network="mainnet", timeout=30)
-tx = fetch_transaction("txid")
-txs = fetch_address_transactions("address")
-utxos = fetch_address_utxos("address")
-sigs = fetch_and_extract("txid", input_values=[100000, 200000])
+sha256(b"data")                                 # 32 bytes
+hash256(b"data")                                # double-SHA256
+hash160(b"data")                                # RIPEMD160(SHA256(data))
+tagged_hash("TapSighash", b"data")             # BIP-340 tagged hash
 ```
 
-### Configuration
+### Settings
 
 ```python
-from bitcoin.config import Config
+from bitcoin import settings
 
-# Load from environment variables
-config = Config.from_env()
-
-# Load from file with env overrides
-config = Config.load("/path/to/config.json")
-
-# Access values
-config.ecc_backend      # "python"
-config.network          # "mainnet"
-config.fetch_timeout    # 30
-config.strict_parsing   # True
+settings.strict_mode = True                     # raise on non-fatal issues
+settings.default_backend = "native"             # or "libsecp" / None
+settings.max_extraction_inputs = 5000
 ```
 
-### Signature Stream
+## Internal APIs (No Stability Guarantee)
 
-```python
-from bitcoin.batch import SignatureStream
-from bitcoin.models import SignatureRecord
-
-stream = SignatureStream(transaction)
-
-# Filtering
-stream = stream.filter(lambda r: r.script_type == "psbt-segwit")
-
-# Mapping
-for record in stream:
-    print(record.r)
-
-# Materialisation
-records = stream.collect()           # → list[SignatureRecord]
-collection = stream.to_collection()  # → SignatureCollection
-```
-
-## Internal APIs (Not Stable)
-
-The following modules have no backward-compatibility guarantees:
-
-- `bitcoin.arithmetic` — Low-level modular arithmetic; prefer `bitcoin.ecc.inverse_mod` and `bitcoin.ecc.normalize_non_negative` for domain-safe wrappers
-- `bitcoin.der` — Public but may change; use `Transaction.extract()` instead
-- `bitcoin.parser` — Public but may change; use `Transaction.parse_hex()` instead
-- `bitcoin.script` — Public but may change; script classification may be restructured
+- `bitcoin.field.modular`, `bitcoin.field.sqrt` — low-level arithmetic; use top-level `inverse`/`sqrt`
+- `bitcoin.encoding.der`, `bitcoin.encoding.sec` — raw format parsers; use top-level `decode_der`/`parse_sec`
+- `bitcoin.transaction.parser` — raw byte parsing; use `parse_tx`
+- `bitcoin.sighash.legacy`, `bitcoin.sighash.segwit`, `bitcoin.sighash.taproot` — use top-level `sighash_legacy`/`sighash_segwit`/`sighash_taproot`
+- `bitcoin.signature.extraction.engine` — extraction internals; use `extract_signatures`

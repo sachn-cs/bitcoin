@@ -2,132 +2,60 @@
 
 ## High-Level Design
 
-The codebase is organized into three layers with strict dependency direction. No module in an upper layer imports from a module in the same or lower layer in a way that creates a cycle.
+10 packages with strict one-way dependency. No package imports from a package at the same or deeper level in a way that creates a cycle.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     CLI / Public API                             │
-│  cli.py  │  psbt.py  │  batch.py  │  fetcher.py                 │
-│  attack.py  │  __init__.py (package exports)                    │
-└─────────────────────────────────────────────────────────────────┘
-         │                    │                      ▲
-         ▼                    ▼                      │
-┌─────────────────────────────────────────────────────────────────┐
-│                    Extraction Layer                              │
-│  extractor.py  │  sighash.py  │  der.py                          │
-│  script.py  │  parser.py  │  signature.py                       │
-└─────────────────────────────────────────────────────────────────┘
-         │                    │                      ▲
-         ▼                    ▼                      │
-┌─────────────────────────────────────────────────────────────────┐
-│                     Arithmetic Layer                             │
-│  ecc.py  │  linear.py  │  arithmetic.py                          │
-│  ecc_backend.py  │  coincurve_backend.py                         │
-└─────────────────────────────────────────────────────────────────┘
-         │                    │                      ▲
-         ▼                    ▼                      │
-┌─────────────────────────────────────────────────────────────────┐
-│                      Foundation Layer                            │
-│  models.py  │  exceptions.py  │  utils.py  │  config.py          │
-│  serializer.py                                                  │
-└─────────────────────────────────────────────────────────────────┘
+field  →  curve  →  encoding  →  script  →  transaction  →  sighash  →  signature  →  psbt
+                                                                                    │
+                                                                                    ▼
+                                                                               services  →  cli
 ```
 
-## Module Boundaries
+## Package Boundaries
 
-See [MODULES.md](MODULES.md) for a detailed breakdown of every module's purpose, dependencies, and public API.
-
-## Dependency Direction
-
-- **No circular dependencies**. Verified by manual inspection of all import statements.
-- **Foundation layer** (`models.py`, `exceptions.py`, `utils.py`, `config.py`, `serializer.py`) has minimal intra-package imports (`utils.py` → `exceptions.py`, `serializer.py` → `utils.py`).
-- **Arithmetic layer** imports from Foundation only.
-- **Extraction layer** imports from Arithmetic and Foundation.
-- **CLI layer** imports from Extraction, Arithmetic, and Foundation.
+| Package | Files | Owns |
+|---------|-------|------|
+| `field` | `modular.py`, `sqrt.py` | Modular inverse, field square root, validation |
+| `curve` | `point.py`, `operations.py`, `params.py`, `backend.py`, `native_backend.py`, `libsecp_backend.py`, `dispatch.py` | Point type, affine ops, SEC encoding, backend dispatch |
+| `encoding` | `hex.py`, `binary.py`, `varint.py`, `der.py`, `sec.py`, `hasher.py` | Binary formats, DER/SEC parsing, SHA256, hash160 |
+| `script` | `opcodes.py`, `parser.py`, `classifier.py`, `builder.py` | Script chunking, type classification, building |
+| `transaction` | `models.py`, `parser.py`, `tx.py` | TxIn/TxOut/Tx structs, raw byte parsing, construction |
+| `sighash` | `flag.py`, `legacy.py`, `segwit.py`, `taproot.py` | Sighash flag parsing, legacy/SegWit/Taproot digest |
+| `signature` | `record.py`, `collection.py`, `check.py`, `extraction/engine.py`, `linearization/engine.py` | Record, extraction, verification, linearization |
+| `psbt` | `models.py`, `parser.py` | PSBT structs, BIP-174 parsing |
+| `services` | `serializer.py` | Transaction serialization |
+| `cli` | `app.py` | Typer commands: `extract`, `linearize`, `version` |
 
 ## Layering Rules
 
-1. **Foundation modules** never import from higher layers.
-2. **Arithmetic modules** never import from Extraction or CLI layers.
-3. **Backend modules** (`ecc_backend.py`, `coincurve_backend.py`) use `TYPE_CHECKING` imports for `Secp256k1Point` to avoid import-time coupling.
-4. **`arithmetic.py`** holds pure modular arithmetic; its functions are re-exported through `ecc.py` and `linear.py` with domain-specific error wrapping.
+1. `field` — stdlib only, no internal imports
+2. `curve` — imports `field` only
+3. `encoding` — stdlib only
+4. `script` — imports `encoding` (for opcode values), `exceptions`
+5. `transaction` — imports `encoding`, `exceptions`
+6. `sighash` — imports `encoding`, `transaction`, `script`
+7. `signature` — imports `curve`, `encoding`, `transaction`, `sighash`
+8. `psbt` — imports `transaction`, `encoding`, `signature`
+9. `services` — imports `transaction`, `encoding`
+10. `cli` — imports `signature`, `encoding`, `transaction`
 
-## Main Runtime Paths
+## Public Interface
 
-### Transaction Parsing & Signature Extraction
+The public API surface is defined in `bitcoin/__init__.py` with an explicit `__all__`. Every public symbol is re-exported from the top-level `bitcoin` package.
 
-```
-Transaction.parse_hex(hex_str)
-  └─ validate_hex_string()          → utils.py
-  └─ parse_transaction_bytes()      → parser.py
-      └─ ByteReader                 → utils.py
-  └─ Transaction.from_parsed()      → transaction.py
+## Backend Architecture
 
-Transaction.extract()
-  └─ extract_signatures()           → extractor.py
-      └─ parse_script()             → script.py
-      └─ dispatch by script type:
-          ├─ _extract_legacy_p2pkh
-          ├─ _extract_native_p2wpkh
-          ├─ _extract_taproot_key_path
-          └─ ...
-      └─ _build_records()           → extractor.py
-          ├─ parse_der_signature()  → der.py
-          ├─ legacy_sighash()       → sighash.py
-          └─ segwit_sighash()       → sighash.py
-```
+Curve operations support pluggable backends:
 
-### Signature Linearization
+- **NativeBackend** — pure Python implementation (always available, default)
+- **LibsecpBackend** — wraps `coincurve` (libsecp256k1 C bindings, optional)
 
-```
-SignatureCollection.linear()
-  └─ derive_linear_coefficients()   → linear.py
-      └─ inverse_mod()              → linear.py → arithmetic.py
-      └─ returns LinearCoefficientRecord
+`set_backend(backend)` installs a backend; `get_backend()` returns it. All point operations (`add`, `double`, `multiply`, `negate`) dispatch through `curve/dispatch.py`.
 
-SignatureCollection.linear_points()
-  └─ derive_point_relation()        → ecc.py
-      └─ derive_linear_coefficients → linear.py
-      └─ scalar_multiply()          → ecc.py (→ backend or pure Python)
-      └─ point_add()                → ecc.py (→ backend or pure Python)
+## Key Design Decisions
 
-SignatureCollection.transform_points()
-  └─ derive_transformed_point()     → ecc.py
-      └─ same as linear_points path
-```
-
-### Batch Processing
-
-```
-batch_process(*txids, mp=True)
-  └─ multiprocessing.Pool
-      └─ _extract_one() per txid    → batch.py
-          └─ fetch_transaction()    → fetcher.py (HTTP → blockstream.info)
-          └─ Transaction.extract()  → extractor.py
-
-BatchProcessor.process_txids(txids)
-  └─ process_txid() per txid        → batch.py (sequential)
-      └─ same as above
-```
-
-## Public Interfaces
-
-The public API surface is defined by:
-
-1. **`bitcoin/__init__.py`** — explicit `__all__` controlling `from bitcoin import *`
-2. **`bitcoin/ecc.py`** — explicit `__all__` for ECC operations
-3. **`bitcoin/linear.py`** — explicit `__all__` for linearization
-4. **`bitcoin/cli.py`** — CLI commands via `typer`
-
-## Ownership Responsibilities
-
-| Module | Owns | Does Not Own |
-|--------|------|-------------|
-| `arithmetic.py` | Pure modular arithmetic (inversion, non-negative validation) | Domain-specific error types |
-| `ecc.py` | Point arithmetic, SEC encoding, public wrappers | Parsing, extraction |
-| `linear.py` | Scalar linearization formulas | Point arithmetic |
-| `extractor.py` | Script dispatch, record building | Sighash computation, DER parsing |
-| `sighash.py` | Legacy/SegWit/Taproot sighash | Transaction structure |
-| `script.py` | Script parsing and classification | Script execution |
-| `fetcher.py` | HTTP API interaction | Transaction models |
-| `serializer.py` | JSON I/O formatting | Domain logic |
+- **Frozen dataclasses with slots** for all value objects (`Point`, `Tx`, `Record`, etc.)
+- **Exhaustive type annotations** — no `Any` without documented reason, no `**kwargs`
+- **Every file under 250 lines** except `__init__.py`
+- **`__init__.py` is the public API surface** — submodules are implementation details
+- **No backward-compatibility shims** — old flat modules (`ecc.py`, `linear.py`, etc.) and `_compat.py` have been removed

@@ -16,7 +16,7 @@ from urllib.request import Request, urlopen
 
 from bitcoin.exceptions import BitcoinError
 from bitcoin.signature import SignatureCollection
-from bitcoin.transaction import Transaction
+from bitcoin.transaction import Tx, parse_tx
 
 logger = logging.getLogger(__name__)
 
@@ -79,9 +79,9 @@ def fetch_transaction_hex(txid: str,
 
 
 def fetch_transaction(txid: str,
-                      *,
-                      network: str = "mainnet",
-                      timeout: int = 30) -> Transaction:
+                       *,
+                       network: str = "mainnet",
+                       timeout: int = 30) -> Tx:
     """Fetch and parse a Bitcoin transaction by txid.
 
     Args:
@@ -93,14 +93,15 @@ def fetch_transaction(txid: str,
         A parsed ``Transaction`` object.
     """
     hex_str = fetch_transaction_hex(txid, network=network, timeout=timeout)
-    return Transaction.parse_hex(hex_str)
+    tx, _ = parse_tx(bytes.fromhex(hex_str))
+    return tx
 
 
 def fetch_address_transactions(address: str,
-                               *,
-                               network: str = "mainnet",
-                               limit: int = 25,
-                               timeout: int = 30) -> list[Transaction]:
+                                *,
+                                network: str = "mainnet",
+                                limit: int = 25,
+                                timeout: int = 30) -> list[Tx]:
     """Fetch recent transactions for a Bitcoin address.
 
     Args:
@@ -130,12 +131,14 @@ def fetch_address_transactions(address: str,
             f"Blockstream API returned invalid response for address {address}: {exc}"
         ) from exc
 
-    result: list[Transaction] = []
+    result: list[Tx] = []
     for entry in data[:limit]:
         hex_str = entry.get("hex")
         if hex_str:
             try:
-                result.append(Transaction.parse_hex(hex_str))
+                raw = bytes.fromhex(hex_str)
+                tx, _ = parse_tx(raw)
+                result.append(tx)
             except (BitcoinError, ValueError):
                 logger.exception("Failed to parse transaction %s",
                                  entry.get("txid"))

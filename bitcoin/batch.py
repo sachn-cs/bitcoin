@@ -10,9 +10,10 @@ from typing import TypeVar
 from bitcoin.exceptions import BitcoinError
 from bitcoin.extractor import extract_signatures
 from bitcoin.fetcher import fetch_transaction
-from bitcoin.models import SignatureRecord
+from bitcoin.models import TransactionContext
 from bitcoin.signature import SignatureCollection
-from bitcoin.transaction import Transaction
+from bitcoin.signature.record import Record as SignatureRecord
+from bitcoin.transaction import Tx, parse_tx
 
 logger = logging.getLogger(__name__)
 
@@ -64,9 +65,15 @@ class BatchProcessor:
         tx = fetch_transaction(txid,
                                network=self._network,
                                timeout=self._timeout)
-        if input_values is not None:
-            tx = tx.with_input_values(input_values)
-        return tx.extract(script_pubkeys=self._script_pubkeys)
+        utxo_values = list(input_values) if input_values is not None else None
+        utxo_script_pubkeys = (
+            list(self._script_pubkeys) if self._script_pubkeys is not None else None
+        )
+        return extract_signatures(
+            tx,
+            utxo_script_pubkeys=utxo_script_pubkeys,
+            utxo_values=utxo_values,
+        )
 
     def process_txids(
         self,
@@ -130,7 +137,7 @@ class SignatureStream:
 
     def __init__(
         self,
-        transaction: Transaction,
+        transaction: Tx,
         record_filter: Callable[[SignatureRecord], bool] | None = None,
     ) -> None:
         self._records: tuple[SignatureRecord,
@@ -199,7 +206,8 @@ def extract_one(
     script_pubkeys: Sequence[bytes] | None,
 ) -> SignatureCollection:
     tx = fetch_transaction(txid, network=network, timeout=timeout)
-    return tx.extract(script_pubkeys=script_pubkeys)
+    utxo_script_pubkeys = list(script_pubkeys) if script_pubkeys is not None else None
+    return extract_signatures(tx, utxo_script_pubkeys=utxo_script_pubkeys)
 
 
 def batch_process(

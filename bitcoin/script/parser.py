@@ -1,0 +1,216 @@
+"""Script parsing and decompilation."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Iterator, Tuple, Union
+
+from bitcoin.script.opcodes import (
+    OP_0,
+    OP_1,
+    OP_16,
+    OP_1NEGATE,
+    OP_PUSHDATA1,
+    OP_PUSHDATA2,
+    OP_PUSHDATA4,
+    OPCODES_BY_VALUE,
+)
+
+Push = bytes
+Opcode = int
+ScriptElement = Union[Push, Opcode]
+
+
+@dataclass
+class ScriptChunk:
+    """One parsed script item (original chunk-based API)."""
+
+    opcode: int
+    data: bytes | None
+
+    @property
+    def is_push(self) -> bool:
+        return self.data is not None
+
+
+def parse_script_chunks(script_bytes: bytes) -> list[ScriptChunk]:
+    """Parse a script into chunks (original chunk-based API)."""
+    elements = parse_script(script_bytes)
+    chunks: list[ScriptChunk] = []
+    i = 0
+    while i < len(script_bytes):
+        opcode = script_bytes[i]
+        i += 1
+        if opcode == OP_0:
+            chunks.append(ScriptChunk(opcode=opcode, data=b""))
+        elif opcode == OP_1NEGATE:
+            chunks.append(ScriptChunk(opcode=opcode, data=None))
+        elif 0x01 <= opcode <= OP_PUSHDATA1 - 1:
+            push_len = opcode
+            data = script_bytes[i : i + push_len]
+            i += push_len
+            chunks.append(ScriptChunk(opcode=opcode, data=data))
+        elif opcode == OP_PUSHDATA1:
+            push_len = script_bytes[i]
+            i += 1
+            data = script_bytes[i : i + push_len]
+            i += push_len
+            chunks.append(ScriptChunk(opcode=opcode, data=data))
+        elif opcode == OP_PUSHDATA2:
+            push_len = int.from_bytes(script_bytes[i : i + 2], "little")
+            i += 2
+            data = script_bytes[i : i + push_len]
+            i += push_len
+            chunks.append(ScriptChunk(opcode=opcode, data=data))
+        elif opcode == OP_PUSHDATA4:
+            push_len = int.from_bytes(script_bytes[i : i + 4], "little")
+            i += 4
+            data = script_bytes[i : i + push_len]
+            i += push_len
+            chunks.append(ScriptChunk(opcode=opcode, data=data))
+        elif OP_1 <= opcode <= OP_16:
+            chunks.append(ScriptChunk(opcode=opcode, data=None))
+        else:
+            chunks.append(ScriptChunk(opcode=opcode, data=None))
+    return chunks
+
+
+def chunks_to_pushes(chunks: list[ScriptChunk]) -> list[bytes]:
+    """Extract pushed data items from parsed script chunks."""
+    return [c.data for c in chunks if c.data is not None]
+
+
+def remove_code_separators(script: bytes) -> bytes:
+    """Verify that no OP_CODESEPARATOR appears in the script."""
+    for chunk in parse_script_chunks(script):
+        if chunk.opcode == 0xAB and chunk.data is None:
+            from bitcoin.exceptions import UnsupportedScriptPathError
+            raise UnsupportedScriptPathError(
+                "OP_CODESEPARATOR is not supported.")
+    return script
+
+
+def parse_script(script_bytes: bytes) -> list[ScriptElement]:
+    """Decompile *script_bytes* into a list of pushes and opcodes."""
+    elements: list[ScriptElement] = []
+    i = 0
+    while i < len(script_bytes):
+        op = script_bytes[i]
+        i += 1
+        if op == OP_0:
+            elements.append(b"")
+        elif op == OP_1NEGATE:
+            elements.append(OP_1NEGATE)
+        elif 0x01 <= op <= OP_PUSHDATA1 - 1:
+            push_len = op
+            chunk = script_bytes[i : i + push_len]
+            i += push_len
+            elements.append(chunk)
+        elif op == OP_PUSHDATA1:
+            push_len = script_bytes[i]
+            i += 1
+            chunk = script_bytes[i : i + push_len]
+            i += push_len
+            elements.append(chunk)
+        elif op == OP_PUSHDATA2:
+            push_len = int.from_bytes(script_bytes[i : i + 2], "little")
+            i += 2
+            chunk = script_bytes[i : i + push_len]
+            i += push_len
+            elements.append(chunk)
+        elif op == OP_PUSHDATA4:
+            push_len = int.from_bytes(script_bytes[i : i + 4], "little")
+            i += 4
+            chunk = script_bytes[i : i + push_len]
+            i += push_len
+            elements.append(chunk)
+        elif OP_1 <= op <= OP_16:
+            elements.append(op)
+        else:
+            elements.append(op)
+    return elements
+
+
+def serialize_script(elements: list[ScriptElement]) -> bytes:
+    """Compile a list of pushes/opcodes back into a script byte string."""
+    result = bytearray()
+    for elem in elements:
+        if isinstance(elem, bytes):
+            if len(elem) == 0:
+                result.append(OP_0)
+            elif len(elem) <= 75:
+                result.append(len(elem))
+                result.extend(elem)
+            elif len(elem) <= 0xFF:
+                result.append(OP_PUSHDATA1)
+                result.append(len(elem))
+                result.extend(elem)
+            elif len(elem) <= 0xFFFF:
+                result.append(OP_PUSHDATA2)
+                result.extend(len(elem).to_bytes(2, "little"))
+                result.extend(elem)
+            else:
+                result.append(OP_PUSHDATA4)
+                result.extend(len(elem).to_bytes(4, "little"))
+                result.extend(elem)
+        elif isinstance(elem, int):
+            if 0 <= elem <= 16:
+                result.append(elem if elem >= 1 else OP_0)
+            else:
+                result.append(elem)
+        else:
+            raise TypeError(f"Unexpected script element type: {type(elem)}.")
+    return bytes(result)
+
+
+def script_to_string(elements: list[ScriptElement]) -> str:
+    """Human-readable representation of a script."""
+    parts: list[str] = []
+    for elem in elements:
+        if isinstance(elem, bytes):
+            parts.append(elem.hex())
+        elif elem in OPCODES_BY_VALUE:
+            parts.append(OPCODES_BY_VALUE[elem])
+        else:
+            parts.append(f"OP_UNKNOWN({elem})")
+    return " ".join(parts)
+
+
+def parse_multisig_redeem_script(script: bytes) -> tuple[int, list[bytes]]:
+    """Parse a multisig redeem script, returning (m, pubkeys)."""
+    chunks = parse_script_chunks(script)
+    if len(chunks) < 3:
+        from bitcoin.exceptions import UnsupportedScriptPathError
+        raise UnsupportedScriptPathError("Multisig script is too short.")
+    from bitcoin.script.opcodes import OP_CHECKSIG
+    if chunks[-1].opcode != OP_CHECKSIG:
+        from bitcoin.exceptions import UnsupportedScriptPathError
+        raise UnsupportedScriptPathError(
+            "Multisig script is missing CHECKMULTISIG.")
+    if chunks[0].data is not None or chunks[-2].data is not None:
+        from bitcoin.exceptions import UnsupportedScriptPathError
+        raise UnsupportedScriptPathError(
+            "Multisig script has invalid structure.")
+    if not (0x51 <= chunks[0].opcode <= 0x60):
+        from bitcoin.exceptions import UnsupportedScriptPathError
+        raise UnsupportedScriptPathError("Multisig m value is unsupported.")
+    if not (0x51 <= chunks[-2].opcode <= 0x60):
+        from bitcoin.exceptions import UnsupportedScriptPathError
+        raise UnsupportedScriptPathError("Multisig n value is unsupported.")
+
+    m = chunks[0].opcode - 0x50
+    n = chunks[-2].opcode - 0x50
+    pubkeys = [c.data for c in chunks[1:-2] if c.data is not None]
+    if len(pubkeys) != n:
+        from bitcoin.exceptions import UnsupportedScriptPathError
+        raise UnsupportedScriptPathError(
+            "Multisig pubkey count is inconsistent.")
+    for pubkey in pubkeys:
+        if len(pubkey) not in {33, 65}:
+            from bitcoin.exceptions import UnsupportedScriptPathError
+            raise UnsupportedScriptPathError(
+                "Unsupported multisig public key length.")
+    if m < 1 or m > n:
+        from bitcoin.exceptions import UnsupportedScriptPathError
+        raise UnsupportedScriptPathError("Multisig threshold is invalid.")
+    return m, pubkeys

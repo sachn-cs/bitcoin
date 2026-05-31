@@ -1,57 +1,35 @@
 # Configuration
 
-## Environment Variables
+## Settings Object — `bitcoin.settings`
 
-| Variable | Type | Default | Description |
-|----------|------|---------|-------------|
-| `BITCOIN_ECC_BACKEND` | str | `"python"` | ECC backend: `"python"` or `"coincurve"` |
-| `BITCOIN_NETWORK` | str | `"mainnet"` | Network: `"mainnet"`, `"testnet"`, `"signet"` |
-| `BITCOIN_FETCH_TIMEOUT` | int | `30` | HTTP fetch timeout in seconds |
-| `BITCOIN_STRICT_PARSING` | bool | `True` | Reject non-standard transactions |
-
-Boolean parsing: accepts `"1"`, `"true"`, `"yes"` (case-insensitive) as `True`.
-
-## Config File
-
-`Config.load(path)` reads JSON config files.
-
-```json
-{
-  "ecc_backend": "python",
-  "network": "testnet",
-  "fetch_timeout": 60,
-  "strict_parsing": false
-}
-```
-
-If the file is missing or has an unsupported format, `load()` logs an error and returns defaults.
-
-## Precedence
-
-1. Environment variables (highest)
-2. Config file values
-3. Code defaults (lowest)
-
-## Programmatic Usage
+A global `Settings` singleton exposed as `bitcoin.settings`:
 
 ```python
-from bitcoin.config import Config
+from bitcoin import settings
 
-# From defaults
-config = Config()
-
-# From env vars
-config = Config.from_env()
-
-# From file with env overrides
-config = Config.load("~/.bitcoin/config.json")
-
-# Access
-config.ecc_backend  # → "python"
-config.fetch_timeout  # → 30
+settings.strict_mode                    # bool (default False)
+settings.default_backend                # str | None (default None → "native")
+settings.max_extraction_inputs           # int (default 100_000)
 ```
 
-## Validation
+## Backend Selection
 
-- `fetch_timeout`: must be convertible to `int`; `ValueError` on failure is caught and re-raised with a clear message
-- `bool` fields: only `"1"`, `"true"`, `"yes"` evaluate to `True`; all others (including `"0"`, `"false"`, `"no"`) evaluate to `False`
+Two backends are available:
+
+| Backend | Class | Availability |
+|---------|-------|-------------|
+| Pure Python | `NativeBackend` | Always (default) |
+| C-backed (libsecp256k1) | `LibsecpBackend` | Requires `pip install coincurve` |
+
+```python
+from bitcoin import set_backend, get_backend, NativeBackend, LibsecpBackend
+
+set_backend(NativeBackend())        # activate pure Python
+set_backend(LibsecpBackend())       # activate C-backed (may ImportError)
+
+backend = get_backend()             # → CurveBackend | None
+```
+
+## Former Config File Support
+
+The old `Config` class (file + env-var loading) has been replaced by the simpler `Settings` singleton. Environment variables (`BITCOIN_ECC_BACKEND`, `BITCOIN_NETWORK`, etc.) are no longer supported; configuration is done programmatically.
