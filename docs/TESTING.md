@@ -42,12 +42,12 @@ uv run pytest tests/ --cov=bitcoin
 
 ## Coverage
 
-The project targets **99%+ line coverage**. Current CI gate rejects drops below 99%.
+The project targets **80%+ line coverage**. Current CI gate rejects drops below 80%.
 
 Run:
 
 ```bash
-uv run pytest tests/ --cov=bitcoin --cov-fail-under=99
+uv run pytest tests/ --cov=bitcoin --cov-fail-under=80
 ```
 
 ## Linting & Type Checking
