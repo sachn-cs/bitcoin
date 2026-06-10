@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Fluent builder for constructing and editing PSBTs (BIP-174).
 
 Provides ``PsbtEditor`` for programmatic creation, signing, and
@@ -63,14 +65,16 @@ class PsbtEditor:
                 bip32_derivations=dict(inp.bip32_derivations),
                 final_script_sig=inp.final_script_sig,
                 final_script_witness=inp.final_script_witness,
-            ) for inp in psbt.inputs
+            )
+            for inp in psbt.inputs
         ]
         self.outputs: list[MutableOutput] = [
             MutableOutput(
                 redeem_script=out.redeem_script,
                 witness_script=out.witness_script,
                 bip32_derivations=dict(out.bip32_derivations),
-            ) for out in psbt.outputs
+            )
+            for out in psbt.outputs
         ]
 
     @staticmethod
@@ -229,8 +233,11 @@ class PsbtEditor:
         tx, _ = parse_tx(self.tx)
         inp = self.inputs[vin]
 
-        flag = sighash_flag if sighash_flag is not None else (
-            inp.sighash_type if inp.sighash_type is not None else SIGHASH_ALL)
+        flag = (
+            sighash_flag
+            if sighash_flag is not None
+            else (inp.sighash_type if inp.sighash_type is not None else SIGHASH_ALL)
+        )
 
         # Determine the script code from the PSBT input data.
         script_code = b""
@@ -244,14 +251,17 @@ class PsbtEditor:
             # Derive the script code from the witness_utxo scriptPubKey
             if inp.witness_utxo is not None:
                 from bitcoin.encoding.varint import decode_varint
+
                 offset = 0
                 value, offset = decode_varint(inp.witness_utxo, offset)
                 script_pubkey_len, offset = decode_varint(inp.witness_utxo, offset)
-                script_pubkey = inp.witness_utxo[offset:offset + script_pubkey_len]
+                script_pubkey = inp.witness_utxo[offset : offset + script_pubkey_len]
                 from bitcoin.script.classifier import classify_script_pubkey
+
                 st = classify_script_pubkey(script_pubkey)
                 if st in ("p2wpkh", "p2sh"):
                     from bitcoin.script.builder import build_p2pkh
+
                     script_code = build_p2pkh(script_pubkey[-20:])
                 else:
                     script_code = script_pubkey
@@ -259,10 +269,12 @@ class PsbtEditor:
         if pubkey is None:
             pubkey_point = multiply(private_key, GENERATOR)
             from bitcoin.curve import serialize_public_key
+
             pubkey = serialize_public_key(pubkey_point)
 
-        sig = sign_tx_input(tx, vin, private_key, script=script_code,
-                            value=value, sighash_flag=flag)
+        sig = sign_tx_input(
+            tx, vin, private_key, script=script_code, value=value, sighash_flag=flag
+        )
         inp.partial_sigs[pubkey] = sig
         return self
 
@@ -307,13 +319,17 @@ class PsbtEditor:
                 bip32_derivations=dict(inp.bip32_derivations),
                 final_script_sig=inp.final_script_sig,
                 final_script_witness=inp.final_script_witness,
-            ) for inp in self.inputs)
+            )
+            for inp in self.inputs
+        )
         outputs = tuple(
             PsbtOutput(
                 redeem_script=out.redeem_script,
                 witness_script=out.witness_script,
                 bip32_derivations=dict(out.bip32_derivations),
-            ) for out in self.outputs)
+            )
+            for out in self.outputs
+        )
         return Psbt(
             tx=self.tx,
             inputs=inputs,

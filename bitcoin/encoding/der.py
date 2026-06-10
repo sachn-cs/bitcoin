@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """DER-encoded ECDSA signature parsing and serialization."""
 
 from functools import lru_cache

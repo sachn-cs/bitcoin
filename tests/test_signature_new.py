@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Tests for the new signature/ package (Record, extraction, linearization)."""
 
 import pytest
@@ -9,7 +11,6 @@ from bitcoin.signature.check import verify_sig
 
 
 class TestRecord:
-
     def test_creation(self) -> None:
         rec = Record(
             txid=b"\x00" * 32,
@@ -62,8 +63,7 @@ class TestRecord:
             ).r_value
 
     def test_negative_vin(self) -> None:
-        with pytest.raises(ValueError,
-                           match="input_index must be non-negative"):
+        with pytest.raises(ValueError, match="input_index must be non-negative"):
             Record(
                 txid=b"\x00" * 32,
                 input_index=-1,
@@ -89,10 +89,10 @@ class TestRecord:
 
 
 class TestVerifySig:
-
     def test_verify_valid(self) -> None:
         msg = hash256(b"test message")
         from bitcoin.signature.signer import sign
+
         private_key = 1
         sig = sign(msg, private_key)
         public_key = multiply(private_key, GENERATOR)
@@ -103,13 +103,13 @@ class TestVerifySig:
         assert not result
 
     def test_verify_bad_r_s_range(self) -> None:
-        result = verify_sig(b"\x00" * 32, b"\x30\x06\x02\x01\x00\x02\x01\x01",
-                            GENERATOR)
+        result = verify_sig(
+            b"\x00" * 32, b"\x30\x06\x02\x01\x00\x02\x01\x01", GENERATOR
+        )
         assert not result
 
 
 class TestLinearization:
-
     def test_linearize_empty(self) -> None:
         result = linearize_signatures([])
         assert result == []

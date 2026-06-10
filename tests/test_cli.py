@@ -1,4 +1,7 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """CLI integration tests using typer.testing.CliRunner."""
+
 from __future__ import annotations
 
 import json
@@ -27,18 +30,20 @@ def test_extract_no_signatures() -> None:
 def test_extract_p2pkh() -> None:
     # A simple P2PKH tx: version(4) + inputs(1) + outputs(1) + locktime(4)
     # This is a 1-input 1-output P2PKH transaction
-    tx_hex = "".join([
-        "01000000",  # version
-        "01",  # input count
-        "abcd1234" * 8,  # prevout hash (32 bytes)
-        "01000000",  # prevout index
-        "00",  # scriptSig length (empty — no sig for CLI test)
-        "ffffffff",  # sequence
-        "01",  # output count
-        "00e1f50500000000",  # value
-        "1976a914000000000000000000000000000000000000000088ac",  # scriptPubKey
-        "00000000",  # locktime
-    ])
+    tx_hex = "".join(
+        [
+            "01000000",  # version
+            "01",  # input count
+            "abcd1234" * 8,  # prevout hash (32 bytes)
+            "01000000",  # prevout index
+            "00",  # scriptSig length (empty — no sig for CLI test)
+            "ffffffff",  # sequence
+            "01",  # output count
+            "00e1f50500000000",  # value
+            "1976a914000000000000000000000000000000000000000088ac",  # scriptPubKey
+            "00000000",  # locktime
+        ]
+    )
     result = runner.invoke(app, ["extract", tx_hex])
     assert result.exit_code == 0
     # No signatures in scriptSig
@@ -70,18 +75,20 @@ def test_decode_empty() -> None:
 
 
 def test_decode_with_tx() -> None:
-    tx_hex = "".join([
-        "01000000",
-        "01",
-        "abcd1234" * 8,
-        "01000000",
-        "00",
-        "ffffffff",
-        "01",
-        "00e1f50500000000",
-        "1976a914000000000000000000000000000000000000000088ac",
-        "00000000",
-    ])
+    tx_hex = "".join(
+        [
+            "01000000",
+            "01",
+            "abcd1234" * 8,
+            "01000000",
+            "00",
+            "ffffffff",
+            "01",
+            "00e1f50500000000",
+            "1976a914000000000000000000000000000000000000000088ac",
+            "00000000",
+        ]
+    )
     result = runner.invoke(app, ["decode", tx_hex])
     assert result.exit_code == 0
     data = json.loads(result.stdout)
@@ -99,8 +106,7 @@ def test_extract_with_progress() -> None:
 
 
 def test_linearize_with_progress() -> None:
-    result = runner.invoke(app,
-                           ["linearize", "--progress", "010000000000000000"])
+    result = runner.invoke(app, ["linearize", "--progress", "010000000000000000"])
     assert result.exit_code == 0
     assert "inputs" in result.stdout or "No signatures" in result.stdout
 

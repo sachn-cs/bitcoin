@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Convenience utilities for constructing transaction objects.
 
 Provides ``make_tx`` to build a ``Tx`` from simple Python dictionaries.
@@ -56,7 +58,8 @@ def build_transaction(
                 script_sig=script_sig,
                 sequence=sequence,
                 witness=witness,
-            ))
+            )
+        )
     txouts: list[TxOut] = []
     for out in outputs:
         value = out["value"]
@@ -66,10 +69,9 @@ def build_transaction(
         if not isinstance(script_pubkey, bytes):
             raise TypeError("script_pubkey must be bytes")
         txouts.append(TxOut(value=value, script_pubkey=script_pubkey))
-    return Tx(version=version,
-              inputs=tuple(txins),
-              outputs=tuple(txouts),
-              lock_time=lock_time)
+    return Tx(
+        version=version, inputs=tuple(txins), outputs=tuple(txouts), lock_time=lock_time
+    )
 
 
 make_tx = build_transaction

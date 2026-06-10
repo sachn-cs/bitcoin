@@ -1,4 +1,7 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Tests for the attack module (ECDSA nonce/key recovery)."""
+
 from __future__ import annotations
 
 import pytest
@@ -94,22 +97,26 @@ def test_detect_nonce_reuse_empty() -> None:
 
 def test_detect_nonce_reuse_no_reuse() -> None:
     """Collection with all-unique r values yields no groups."""
-    col = LinearCoefficientCollection(records=(
-        derive_linear_coefficients(1, 1, 1, input_index=0),
-        derive_linear_coefficients(2, 2, 2, input_index=1),
-        derive_linear_coefficients(3, 3, 3, input_index=2),
-    ))
+    col = LinearCoefficientCollection(
+        records=(
+            derive_linear_coefficients(1, 1, 1, input_index=0),
+            derive_linear_coefficients(2, 2, 2, input_index=1),
+            derive_linear_coefficients(3, 3, 3, input_index=2),
+        )
+    )
     groups = detect_nonce_reuse(col)
     assert groups == []
 
 
 def test_detect_nonce_reuse_finds_group() -> None:
     """Collection with repeated r yields one group."""
-    col = LinearCoefficientCollection(records=(
-        derive_linear_coefficients(99, 1, 0xAAAA, input_index=0),
-        derive_linear_coefficients(99, 2, 0xBBBB, input_index=1),
-        derive_linear_coefficients(99, 3, 0xCCCC, input_index=2),
-    ))
+    col = LinearCoefficientCollection(
+        records=(
+            derive_linear_coefficients(99, 1, 0xAAAA, input_index=0),
+            derive_linear_coefficients(99, 2, 0xBBBB, input_index=1),
+            derive_linear_coefficients(99, 3, 0xCCCC, input_index=2),
+        )
+    )
     groups = detect_nonce_reuse(col)
     assert len(groups) == 1
     assert groups[0].r == 99

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Property-based tests using Hypothesis.
 
 Covers:
@@ -6,6 +8,7 @@ Covers:
 - SEC serialisation roundtrip
 - Transaction serialisation roundtrip
 """
+
 from __future__ import annotations
 
 from hypothesis import assume, given
@@ -45,9 +48,7 @@ script_sig = st.binary(min_size=0, max_size=32)
 sequence = st.integers(min_value=0, max_value=0xFFFFFFFF)
 value = st.integers(min_value=0, max_value=21000000 * 10**8)
 script_pubkey = st.binary(min_size=0, max_size=32)
-witness_items = st.lists(st.binary(min_size=0, max_size=32),
-                         min_size=0,
-                         max_size=10)
+witness_items = st.lists(st.binary(min_size=0, max_size=32), min_size=0, max_size=10)
 
 
 @st.composite
@@ -301,13 +302,15 @@ def psbt_input_strategy(draw: st.DrawFn) -> dict[str, object]:
         result["witness_script"] = draw(st.binary(min_size=0, max_size=32))
     n_sigs = draw(st.integers(min_value=0, max_value=3))
     result["partial_sigs"] = {
-        draw(st.binary(min_size=32, max_size=33)):
-        draw(st.binary(min_size=8, max_size=73))
+        draw(st.binary(min_size=32, max_size=33)): draw(
+            st.binary(min_size=8, max_size=73)
+        )
         for _ in range(n_sigs)
     }
     result["bip32_derivations"] = {
-        draw(st.binary(min_size=32, max_size=33)):
-        draw(st.binary(min_size=5, max_size=15))
+        draw(st.binary(min_size=32, max_size=33)): draw(
+            st.binary(min_size=5, max_size=15)
+        )
         for _ in range(draw(st.integers(min_value=0, max_value=3)))
     }
     return result
@@ -332,12 +335,10 @@ def test_fee_estimate_non_negative(
                 script_sig=s,
                 sequence=0xFFFFFFFF,
                 witness=EMPTY_WITNESS,
-            ) for i, s in enumerate(script_sigs)
+            )
+            for i, s in enumerate(script_sigs)
         ),
-        outputs=tuple(
-            TxOut(value=10000, script_pubkey=s)
-            for s in script_pubkeys
-        ),
+        outputs=tuple(TxOut(value=10000, script_pubkey=s) for s in script_pubkeys),
         lock_time=0,
     )
     vsize = estimate_vsize(tx)

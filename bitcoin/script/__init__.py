@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Re-exports all Bitcoin script types, classifiers, builders, and opcodes.
 
 Aggregates the public API from the submodules: parser, classifier, builder,

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Blockchain data fetching with pluggable backends.
 
 Provides a ``BlockchainProvider`` protocol and concrete implementations
@@ -169,8 +171,9 @@ class BaseBlockchainProvider:
         tx_json = self.fetch_tx_json(txid)
         outputs = tx_json.get(self.outputs_key, [])
         if vout >= len(outputs):
-            raise ValueError(f"vout {vout} out of range for tx {txid} "
-                             f"(only {len(outputs)} outputs).")
+            raise ValueError(
+                f"vout {vout} out of range for tx {txid} (only {len(outputs)} outputs)."
+            )
         raw_script = outputs[vout].get(self.script_key)
         if raw_script is None:
             raise ValueError(f"No script for vout {vout} in tx {txid}.")
@@ -184,8 +187,9 @@ class BaseBlockchainProvider:
         tx_json = self.fetch_tx_json(txid)
         outputs = tx_json.get(self.outputs_key, [])
         if vout >= len(outputs):
-            raise ValueError(f"vout {vout} out of range for tx {txid} "
-                             f"(only {len(outputs)} outputs).")
+            raise ValueError(
+                f"vout {vout} out of range for tx {txid} (only {len(outputs)} outputs)."
+            )
         return int(outputs[vout][self.value_key])
 
     def fetch_tx_json(self, txid: str) -> dict[str, Any]:
@@ -353,8 +357,14 @@ def fetch_text(url: str, *, timeout: int = HTTP_TIMEOUT) -> str:
             msg = f"HTTP {exc.code} fetching {url}: {exc.reason}"
             if exc.code in RETRYABLE_STATUSES and attempt < MAX_RETRIES - 1:
                 wait = RETRY_BACKOFF * (2**attempt)
-                logger.debug("HTTP %d fetching %s, retrying in %.1fs (attempt %d/%d)",
-                             exc.code, url, wait, attempt + 1, MAX_RETRIES)
+                logger.debug(
+                    "HTTP %d fetching %s, retrying in %.1fs (attempt %d/%d)",
+                    exc.code,
+                    url,
+                    wait,
+                    attempt + 1,
+                    MAX_RETRIES,
+                )
                 time.sleep(wait)
                 last_error = OSError(msg)
                 continue
@@ -363,8 +373,13 @@ def fetch_text(url: str, *, timeout: int = HTTP_TIMEOUT) -> str:
             msg = f"URL error fetching {url}: {exc.reason}"
             if attempt < MAX_RETRIES - 1:
                 wait = RETRY_BACKOFF * (2**attempt)
-                logger.debug("URL error fetching %s, retrying in %.1fs (attempt %d/%d)",
-                             url, wait, attempt + 1, MAX_RETRIES)
+                logger.debug(
+                    "URL error fetching %s, retrying in %.1fs (attempt %d/%d)",
+                    url,
+                    wait,
+                    attempt + 1,
+                    MAX_RETRIES,
+                )
                 time.sleep(wait)
                 last_error = OSError(msg)
                 continue
@@ -411,8 +426,14 @@ def post_data(url: str, data: bytes, *, timeout: int = HTTP_TIMEOUT) -> str:
             msg = f"HTTP {exc.code} POST {url}: {exc.reason}"
             if exc.code in RETRYABLE_STATUSES and attempt < MAX_RETRIES - 1:
                 wait = RETRY_BACKOFF * (2**attempt)
-                logger.debug("HTTP %d POST %s, retrying in %.1fs (attempt %d/%d)",
-                             exc.code, url, wait, attempt + 1, MAX_RETRIES)
+                logger.debug(
+                    "HTTP %d POST %s, retrying in %.1fs (attempt %d/%d)",
+                    exc.code,
+                    url,
+                    wait,
+                    attempt + 1,
+                    MAX_RETRIES,
+                )
                 time.sleep(wait)
                 last_error = OSError(msg)
                 continue
@@ -422,8 +443,13 @@ def post_data(url: str, data: bytes, *, timeout: int = HTTP_TIMEOUT) -> str:
             msg = f"URL error POST {url}: {exc.reason}"
             if attempt < MAX_RETRIES - 1:
                 wait = RETRY_BACKOFF * (2**attempt)
-                logger.debug("URL error POST %s, retrying in %.1fs (attempt %d/%d)",
-                             url, wait, attempt + 1, MAX_RETRIES)
+                logger.debug(
+                    "URL error POST %s, retrying in %.1fs (attempt %d/%d)",
+                    url,
+                    wait,
+                    attempt + 1,
+                    MAX_RETRIES,
+                )
                 time.sleep(wait)
                 last_error = OSError(msg)
                 continue
@@ -505,7 +531,8 @@ def fetch_and_extract(
         provider = BlockstreamProvider()
 
     is_txid = len(txid_or_hex) == 64 and all(
-        c in "0123456789abcdefABCDEF" for c in txid_or_hex)
+        c in "0123456789abcdefABCDEF" for c in txid_or_hex
+    )
 
     if is_txid:
         tx_hex = provider.get_transaction_hex(txid_or_hex)

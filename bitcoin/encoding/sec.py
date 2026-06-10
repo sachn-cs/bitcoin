@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """SEC-format public-key parsing and serialization."""
 
 from functools import lru_cache
@@ -32,7 +34,8 @@ def parse_sec(data: bytes) -> "Point":
         point = Point.from_sec_uncompressed(data)
     else:
         raise ValueError(
-            f"Invalid SEC key length {len(data)} (expected 33 or 65 bytes).")
+            f"Invalid SEC key length {len(data)} (expected 33 or 65 bytes)."
+        )
 
     from bitcoin.curve.operations import is_on_curve
 

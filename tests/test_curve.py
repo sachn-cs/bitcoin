@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Tests for the new curve/ package (Point, operations, backends)."""
 
 import pytest
@@ -20,7 +22,6 @@ from bitcoin.curve import (
 
 
 class TestPoint:
-
     def test_creation(self) -> None:
         p = Point(x=1, y=2)
         assert p.x == 1
@@ -69,7 +70,6 @@ class TestPoint:
 
 
 class TestPointOperations:
-
     def test_negate(self) -> None:
         neg = negate(GENERATOR)
         assert is_on_curve(neg)
@@ -108,7 +108,6 @@ class TestPointOperations:
 
 
 class TestPointSecRoundtrip:
-
     def test_compressed_roundtrip(self) -> None:
         ser = GENERATOR.to_sec_compressed()
         assert len(ser) == 33
@@ -133,12 +132,12 @@ class TestPointSecRoundtrip:
 
     def test_infinity_cannot_serialize(self) -> None:
         from bitcoin.encoding.sec import serialize_sec
+
         with pytest.raises(ValueError, match="Cannot serialize"):
             serialize_sec(INFINITY)
 
 
 class TestPointArithmetic:
-
     def test_arithmetic_negate(self) -> None:
         neg = GENERATOR.arithmetic.negate()
         assert GENERATOR.y is not None
@@ -178,7 +177,6 @@ class TestPointArithmetic:
 
 
 class TestBackendDispatch:
-
     def test_default_backend(self) -> None:
         assert get_backend() is None
 
@@ -187,6 +185,7 @@ class TestBackendDispatch:
         set_backend(backend)
         assert get_backend() is backend
         import bitcoin.curve.dispatch as d
+
         d.backend = None
         assert get_backend() is None
 
@@ -197,13 +196,16 @@ class TestBackendDispatch:
     def test_dispatch_auto_resolve(self) -> None:
         """Dispatch functions auto-resolve backend without explicit set_backend."""
         from bitcoin.curve.dispatch import resolve_backend
+
         backend = resolve_backend()
         from bitcoin.curve.backend.native import NativeBackend
+
         assert isinstance(backend, NativeBackend)
 
     def test_dispatch_functions_work_without_set_backend(self) -> None:
         """Operations work with auto-resolved backend."""
         from bitcoin.curve.dispatch import add, is_on_curve, negate
+
         assert is_on_curve(GENERATOR)
         neg = negate(GENERATOR)
         assert add(GENERATOR, neg) == INFINITY

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Legacy (pre-SegWit) sighash computation.
 
 This is the algorithm used before SegWit, superseded by BIP-143.
@@ -15,8 +17,9 @@ if TYPE_CHECKING:
 
 
 @functools.lru_cache(maxsize=128)
-def sighash_legacy(transaction: Tx, input_index: int, script: bytes,
-                   sighash_flag: int) -> bytes:
+def sighash_legacy(
+    transaction: Tx, input_index: int, script: bytes, sighash_flag: int
+) -> bytes:
     """Compute the legacy (pre-SegWit) sighash for a transaction input.
 
     The serialisation depends on the SIGHASH flags: inputs/outputs may be
@@ -39,6 +42,7 @@ def sighash_legacy(transaction: Tx, input_index: int, script: bytes,
     """
     from bitcoin.services.serializer import serialize_legacy_tx_for_sighash
 
-    preimage = serialize_legacy_tx_for_sighash(transaction, input_index, script,
-                                               sighash_flag)
+    preimage = serialize_legacy_tx_for_sighash(
+        transaction, input_index, script, sighash_flag
+    )
     return hash256(preimage)

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Transaction fee estimation and virtual size calculation."""
 
 from __future__ import annotations
@@ -24,10 +26,12 @@ def estimate_vsize(tx: Tx) -> int:
     Returns:
         Estimated virtual size in vbytes.
     """
-    base_weight = (BASE_VBYTE_SIZE +
-                   OVERHEAD_PER_INPUT * len(tx.inputs) +
-                   OVERHEAD_PER_OUTPUT * len(tx.outputs) +
-                   sum(len(out.script_pubkey) for out in tx.outputs))
+    base_weight = (
+        BASE_VBYTE_SIZE
+        + OVERHEAD_PER_INPUT * len(tx.inputs)
+        + OVERHEAD_PER_OUTPUT * len(tx.outputs)
+        + sum(len(out.script_pubkey) for out in tx.outputs)
+    )
     base_weight *= WITNESS_SCALE_FACTOR
 
     witness_weight = 0

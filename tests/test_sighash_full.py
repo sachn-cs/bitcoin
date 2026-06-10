@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Comprehensive tests for sighash (flag, legacy, segwit, taproot) + serializer."""
 
 from __future__ import annotations
@@ -114,16 +116,15 @@ class TestSighashFlag:
         assert sighash_name(SIGHASH_SINGLE) == "SIGHASH_SINGLE"
 
     def test_sighash_name_all_anyonecanpay(self) -> None:
-        assert sighash_name(
-            SIGHASH_ALL_ANYONECANPAY) == "SIGHASH_ALL|ANYONECANPAY"
+        assert sighash_name(SIGHASH_ALL_ANYONECANPAY) == "SIGHASH_ALL|ANYONECANPAY"
 
     def test_sighash_name_none_anyonecanpay(self) -> None:
-        assert sighash_name(
-            SIGHASH_NONE_ANYONECANPAY) == "SIGHASH_NONE|ANYONECANPAY"
+        assert sighash_name(SIGHASH_NONE_ANYONECANPAY) == "SIGHASH_NONE|ANYONECANPAY"
 
     def test_sighash_name_single_anyonecanpay(self) -> None:
         assert sighash_name(SIGHASH_SINGLE_ANYONECANPAY) == (
-            "SIGHASH_SINGLE|ANYONECANPAY")
+            "SIGHASH_SINGLE|ANYONECANPAY"
+        )
 
     def test_sighash_name_unknown(self) -> None:
         assert sighash_name(0x04) == "SIGHASH_UNKNOWN(4)"
@@ -141,16 +142,20 @@ class TestSighashFlag:
         assert require_sighash_flag(SIGHASH_SINGLE) == SIGHASH_SINGLE
 
     def test_require_valid_all_acp(self) -> None:
-        assert (require_sighash_flag(SIGHASH_ALL_ANYONECANPAY) ==
-                SIGHASH_ALL_ANYONECANPAY)
+        assert (
+            require_sighash_flag(SIGHASH_ALL_ANYONECANPAY) == SIGHASH_ALL_ANYONECANPAY
+        )
 
     def test_require_valid_none_acp(self) -> None:
-        assert (require_sighash_flag(SIGHASH_NONE_ANYONECANPAY) ==
-                SIGHASH_NONE_ANYONECANPAY)
+        assert (
+            require_sighash_flag(SIGHASH_NONE_ANYONECANPAY) == SIGHASH_NONE_ANYONECANPAY
+        )
 
     def test_require_valid_single_acp(self) -> None:
-        assert (require_sighash_flag(SIGHASH_SINGLE_ANYONECANPAY) ==
-                SIGHASH_SINGLE_ANYONECANPAY)
+        assert (
+            require_sighash_flag(SIGHASH_SINGLE_ANYONECANPAY)
+            == SIGHASH_SINGLE_ANYONECANPAY
+        )
 
     def test_require_invalid_base(self) -> None:
         with pytest.raises(ValueError, match="Unknown SIGHASH base type"):
@@ -236,18 +241,19 @@ class TestSighashSegwit:
             sighash_segwit(tx, 1, SCRIPT, self.VALUE, SIGHASH_SINGLE)
 
     def test_all_anyonecanpay(self) -> None:
-        h = sighash_segwit(TX_2IN_2OUT, 0, SCRIPT, self.VALUE,
-                           SIGHASH_ALL_ANYONECANPAY)
+        h = sighash_segwit(TX_2IN_2OUT, 0, SCRIPT, self.VALUE, SIGHASH_ALL_ANYONECANPAY)
         assert len(h) == 32
 
     def test_none_anyonecanpay(self) -> None:
-        h = sighash_segwit(TX_2IN_2OUT, 0, SCRIPT, self.VALUE,
-                           SIGHASH_NONE_ANYONECANPAY)
+        h = sighash_segwit(
+            TX_2IN_2OUT, 0, SCRIPT, self.VALUE, SIGHASH_NONE_ANYONECANPAY
+        )
         assert len(h) == 32
 
     def test_single_anyonecanpay(self) -> None:
-        h = sighash_segwit(TX_2IN_2OUT, 0, SCRIPT, self.VALUE,
-                           SIGHASH_SINGLE_ANYONECANPAY)
+        h = sighash_segwit(
+            TX_2IN_2OUT, 0, SCRIPT, self.VALUE, SIGHASH_SINGLE_ANYONECANPAY
+        )
         assert len(h) == 32
 
 
@@ -420,44 +426,44 @@ class TestSerializer:
     # -- serialize_legacy_tx_for_sighash --
 
     def test_legacy_sighash_all(self) -> None:
-        raw = serialize_legacy_tx_for_sighash(TX_2IN_2OUT, 0, SCRIPT,
-                                              SIGHASH_ALL)
+        raw = serialize_legacy_tx_for_sighash(TX_2IN_2OUT, 0, SCRIPT, SIGHASH_ALL)
         assert isinstance(raw, bytes)
 
     def test_legacy_sighash_none(self) -> None:
-        raw = serialize_legacy_tx_for_sighash(TX_2IN_2OUT, 0, SCRIPT,
-                                              SIGHASH_NONE)
+        raw = serialize_legacy_tx_for_sighash(TX_2IN_2OUT, 0, SCRIPT, SIGHASH_NONE)
         assert isinstance(raw, bytes)
 
     def test_legacy_sighash_single_valid(self) -> None:
-        raw = serialize_legacy_tx_for_sighash(TX_2IN_2OUT, 0, SCRIPT,
-                                              SIGHASH_SINGLE)
+        raw = serialize_legacy_tx_for_sighash(TX_2IN_2OUT, 0, SCRIPT, SIGHASH_SINGLE)
         assert isinstance(raw, bytes)
 
     def test_legacy_sighash_single_out_of_range(self) -> None:
         with pytest.raises(ValueError, match="out of bounds"):
-            serialize_legacy_tx_for_sighash(TX_2IN_2OUT, 5, SCRIPT,
-                                            SIGHASH_SINGLE)
+            serialize_legacy_tx_for_sighash(TX_2IN_2OUT, 5, SCRIPT, SIGHASH_SINGLE)
 
     def test_legacy_sighash_anyonecanpay_all(self) -> None:
-        raw = serialize_legacy_tx_for_sighash(TX_2IN_2OUT, 0, SCRIPT,
-                                              SIGHASH_ALL_ANYONECANPAY)
+        raw = serialize_legacy_tx_for_sighash(
+            TX_2IN_2OUT, 0, SCRIPT, SIGHASH_ALL_ANYONECANPAY
+        )
         assert isinstance(raw, bytes)
 
     def test_legacy_sighash_anyonecanpay_none(self) -> None:
-        raw = serialize_legacy_tx_for_sighash(TX_2IN_2OUT, 0, SCRIPT,
-                                              SIGHASH_NONE_ANYONECANPAY)
+        raw = serialize_legacy_tx_for_sighash(
+            TX_2IN_2OUT, 0, SCRIPT, SIGHASH_NONE_ANYONECANPAY
+        )
         assert isinstance(raw, bytes)
 
     def test_legacy_sighash_anyonecanpay_single(self) -> None:
-        raw = serialize_legacy_tx_for_sighash(TX_2IN_2OUT, 0, SCRIPT,
-                                              SIGHASH_SINGLE_ANYONECANPAY)
+        raw = serialize_legacy_tx_for_sighash(
+            TX_2IN_2OUT, 0, SCRIPT, SIGHASH_SINGLE_ANYONECANPAY
+        )
         assert isinstance(raw, bytes)
 
     def test_legacy_sighash_anyonecanpay_all_second_input(self) -> None:
         """ACP + input_index != 0 exercises the ACP path for input 1."""
-        raw = serialize_legacy_tx_for_sighash(TX_2IN_2OUT, 1, SCRIPT,
-                                              SIGHASH_ALL_ANYONECANPAY)
+        raw = serialize_legacy_tx_for_sighash(
+            TX_2IN_2OUT, 1, SCRIPT, SIGHASH_ALL_ANYONECANPAY
+        )
         assert isinstance(raw, bytes)
 
     def test_legacy_sighash_all_with_flag_zero(self) -> None:

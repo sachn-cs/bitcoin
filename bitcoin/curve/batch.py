@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Batched elliptic-curve operations.
 
 Provides multi-exponentiation (Straus's algorithm) and batch
@@ -69,6 +71,7 @@ def batch_validate(points: list[Point]) -> list[bool]:
         A list of booleans parallel to *points*.
     """
     from bitcoin.curve.dispatch import is_on_curve
+
     return [is_on_curve(p) for p in points]
 
 
@@ -82,15 +85,18 @@ def batch_normalize(points: list[Point]) -> list[Point]:
         A list of normalized points.
     """
     from bitcoin.curve.dispatch import normalize
+
     result: list[Point] = []
     for p in points:
         if p.infinity:
             result.append(p)
         else:
-            result.append(Point(
-                x=normalize(p.x) if p.x is not None else None,
-                y=normalize(p.y) if p.y is not None else None,
-            ))
+            result.append(
+                Point(
+                    x=normalize(p.x) if p.x is not None else None,
+                    y=normalize(p.y) if p.y is not None else None,
+                )
+            )
     return result
 
 

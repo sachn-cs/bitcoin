@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """libsecp256k1 (coincurve) availability check.
 
 Provides the ``check`` function to verify that the coincurve C

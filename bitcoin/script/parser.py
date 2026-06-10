@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Bitcoin Script parsing, serialization, and decompilation.
 
 Provides the ``ScriptChunk`` dataclass, low-level parsing of raw script
@@ -69,25 +71,25 @@ def parse_script_chunks(script_bytes: bytes) -> list[ScriptChunk]:
             chunks.append(ScriptChunk(opcode=opcode, data=None))
         elif 0x01 <= opcode <= OP_PUSHDATA1 - 1:
             push_len = opcode
-            data = script_bytes[i:i + push_len]
+            data = script_bytes[i : i + push_len]
             i += push_len
             chunks.append(ScriptChunk(opcode=opcode, data=data))
         elif opcode == OP_PUSHDATA1:
             push_len = script_bytes[i]
             i += 1
-            data = script_bytes[i:i + push_len]
+            data = script_bytes[i : i + push_len]
             i += push_len
             chunks.append(ScriptChunk(opcode=opcode, data=data))
         elif opcode == OP_PUSHDATA2:
-            push_len = int.from_bytes(script_bytes[i:i + 2], "little")
+            push_len = int.from_bytes(script_bytes[i : i + 2], "little")
             i += 2
-            data = script_bytes[i:i + push_len]
+            data = script_bytes[i : i + push_len]
             i += push_len
             chunks.append(ScriptChunk(opcode=opcode, data=data))
         elif opcode == OP_PUSHDATA4:
-            push_len = int.from_bytes(script_bytes[i:i + 4], "little")
+            push_len = int.from_bytes(script_bytes[i : i + 4], "little")
             i += 4
-            data = script_bytes[i:i + push_len]
+            data = script_bytes[i : i + push_len]
             i += push_len
             chunks.append(ScriptChunk(opcode=opcode, data=data))
         elif OP_1 <= opcode <= OP_16:
@@ -124,6 +126,7 @@ def reject_code_separators(script: bytes) -> bytes:
     for chunk in parse_script_chunks(script):
         if chunk.opcode == 0xAB and chunk.data is None:
             from bitcoin.exceptions import UnsupportedScriptPathError
+
             raise UnsupportedScriptPathError("OP_CODESEPARATOR is not supported.")
     return script
 
@@ -152,25 +155,25 @@ def parse_script(script_bytes: bytes) -> list[ScriptElement]:
             elements.append(OP_1NEGATE)
         elif 0x01 <= op <= OP_PUSHDATA1 - 1:
             push_len = op
-            chunk = script_bytes[i:i + push_len]
+            chunk = script_bytes[i : i + push_len]
             i += push_len
             elements.append(chunk)
         elif op == OP_PUSHDATA1:
             push_len = script_bytes[i]
             i += 1
-            chunk = script_bytes[i:i + push_len]
+            chunk = script_bytes[i : i + push_len]
             i += push_len
             elements.append(chunk)
         elif op == OP_PUSHDATA2:
-            push_len = int.from_bytes(script_bytes[i:i + 2], "little")
+            push_len = int.from_bytes(script_bytes[i : i + 2], "little")
             i += 2
-            chunk = script_bytes[i:i + push_len]
+            chunk = script_bytes[i : i + push_len]
             i += push_len
             elements.append(chunk)
         elif op == OP_PUSHDATA4:
-            push_len = int.from_bytes(script_bytes[i:i + 4], "little")
+            push_len = int.from_bytes(script_bytes[i : i + 4], "little")
             i += 4
-            chunk = script_bytes[i:i + push_len]
+            chunk = script_bytes[i : i + push_len]
             i += push_len
             elements.append(chunk)
         elif OP_1 <= op <= OP_16:
@@ -273,19 +276,25 @@ def parse_multisig_redeem_script(script: bytes) -> tuple[int, list[bytes]]:
     chunks = parse_script_chunks(script)
     if len(chunks) < 3:
         from bitcoin.exceptions import UnsupportedScriptPathError
+
         raise UnsupportedScriptPathError("Multisig script is too short.")
     from bitcoin.script.opcodes import OP_CHECKSIG
+
     if chunks[-1].opcode != OP_CHECKSIG:
         from bitcoin.exceptions import UnsupportedScriptPathError
+
         raise UnsupportedScriptPathError("Multisig script is missing CHECKMULTISIG.")
     if chunks[0].data is not None or chunks[-2].data is not None:
         from bitcoin.exceptions import UnsupportedScriptPathError
+
         raise UnsupportedScriptPathError("Multisig script has invalid structure.")
     if not (0x51 <= chunks[0].opcode <= 0x60):
         from bitcoin.exceptions import UnsupportedScriptPathError
+
         raise UnsupportedScriptPathError("Multisig m value is unsupported.")
     if not (0x51 <= chunks[-2].opcode <= 0x60):
         from bitcoin.exceptions import UnsupportedScriptPathError
+
         raise UnsupportedScriptPathError("Multisig n value is unsupported.")
 
     m = chunks[0].opcode - 0x50
@@ -293,12 +302,15 @@ def parse_multisig_redeem_script(script: bytes) -> tuple[int, list[bytes]]:
     pubkeys = [c.data for c in chunks[1:-2] if c.data is not None]
     if len(pubkeys) != n:
         from bitcoin.exceptions import UnsupportedScriptPathError
+
         raise UnsupportedScriptPathError("Multisig pubkey count is inconsistent.")
     for pubkey in pubkeys:
         if len(pubkey) not in {33, 65}:
             from bitcoin.exceptions import UnsupportedScriptPathError
+
             raise UnsupportedScriptPathError("Unsupported multisig public key length.")
     if m < 1 or m > n:
         from bitcoin.exceptions import UnsupportedScriptPathError
+
         raise UnsupportedScriptPathError("Multisig threshold is invalid.")
     return m, pubkeys

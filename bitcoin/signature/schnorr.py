@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Schnorr signature verification (BIP-340) for Taproot inputs."""
 
 from __future__ import annotations
@@ -43,8 +45,11 @@ def verify_schnorr_signature(
     Returns:
         ``True`` if the signature is valid.
     """
-    if (len(public_key_bytes) != 32 or len(signature_bytes) != 64 or
-            len(message_hash) != 32):
+    if (
+        len(public_key_bytes) != 32
+        or len(signature_bytes) != 64
+        or len(message_hash) != 32
+    ):
         return False
 
     p = lift_x(int.from_bytes(public_key_bytes, "big"))
@@ -58,10 +63,12 @@ def verify_schnorr_signature(
         return False
 
     from bitcoin.curve.point import Point
+
     pubkey_point = Point(x=p[0], y=p[1])
 
-    e = tagged_hash("BIP0340/challenge",
-                    signature_bytes[:32] + public_key_bytes + message_hash)
+    e = tagged_hash(
+        "BIP0340/challenge", signature_bytes[:32] + public_key_bytes + message_hash
+    )
     e_int = int.from_bytes(e, "big") % CURVE_ORDER
 
     sG = multiply(s, GENERATOR)

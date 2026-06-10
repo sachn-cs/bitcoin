@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """ECDSA signature types, extraction, linearization, verification, and signing."""
 
 from bitcoin.signature.attack import NonceReuseGroup

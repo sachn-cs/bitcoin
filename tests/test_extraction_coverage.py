@@ -1,5 +1,8 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Comprehensive coverage tests for extraction engine, classifier, builder,
 and signature check."""
+
 from __future__ import annotations
 
 import pytest
@@ -104,8 +107,8 @@ def base_tx(
         witness=witness,
     )
     txouts = tuple(
-        TxOut(value=value, script_pubkey=script_pubkey)
-        for _ in range(num_outputs))
+        TxOut(value=value, script_pubkey=script_pubkey) for _ in range(num_outputs)
+    )
     return Tx(version=2, inputs=(txin,), outputs=txouts, lock_time=0)
 
 
@@ -113,7 +116,6 @@ def base_tx(
 
 
 class TestClassifierPubKey:
-
     def test_p2pkh(self) -> None:
         sc = p2pkh_script(b"\x00" * 20)
         assert classify_script_pubkey(sc) == P2PKH
@@ -159,7 +161,6 @@ class TestClassifierPubKey:
 
 
 class TestClassifierScriptSig:
-
     def test_empty(self) -> None:
         assert classify_script_sig(b"") == "empty"
 
@@ -177,7 +178,6 @@ class TestClassifierScriptSig:
 
 
 class TestClassifierParseP2PKH:
-
     def test_success(self) -> None:
         sig, pub = parse_p2pkh_script_sig(make_p2pkh_scriptsig())
         assert sig == SIG_R1S1_ALL
@@ -194,7 +194,6 @@ class TestClassifierParseP2PKH:
 
 
 class TestClassifierIsP2SH:
-
     def test_is_p2sh_true(self) -> None:
         sc = p2sh_script(b"\x00" * 20)
         assert is_p2sh(sc) is True
@@ -208,7 +207,6 @@ class TestClassifierIsP2SH:
 
 
 class TestBuilder:
-
     def test_build_p2pk(self) -> None:
         pk = TEST_PUB_SEC
         result = build_p2pk(pk)
@@ -261,7 +259,6 @@ class TestBuilder:
 
 
 class TestVerifySig:
-
     VALID_PRIV = 123456
     VALID_PUB: Point = multiply(VALID_PRIV, GENERATOR)
     VALID_MSG = hash256(b"coverage test message for verify_sig")
@@ -270,13 +267,13 @@ class TestVerifySig:
     VALID_R_PT: Point = multiply(VALID_K, GENERATOR)
     assert VALID_R_PT.x is not None
     VALID_R = VALID_R_PT.x % CURVE_ORDER
-    VALID_S = (pow(VALID_K, -1, CURVE_ORDER) *
-               (VALID_E + VALID_R * VALID_PRIV)) % CURVE_ORDER
+    VALID_S = (
+        pow(VALID_K, -1, CURVE_ORDER) * (VALID_E + VALID_R * VALID_PRIV)
+    ) % CURVE_ORDER
     VALID_SIG = encode_der(VALID_R, VALID_S)
 
     def test_valid(self) -> None:
-        assert verify_sig(self.VALID_MSG, self.VALID_SIG,
-                          self.VALID_PUB) is True
+        assert verify_sig(self.VALID_MSG, self.VALID_SIG, self.VALID_PUB) is True
 
     def test_invalid_der(self) -> None:
         assert verify_sig(self.VALID_MSG, b"\x00", self.VALID_PUB) is False
@@ -321,8 +318,9 @@ class TestRecoverPublicKey:
     assert VALID_R_PT.x is not None
     assert VALID_R_PT.y is not None
     VALID_R = VALID_R_PT.x % CURVE_ORDER
-    VALID_S = (pow(VALID_K, -1, CURVE_ORDER) *
-               (VALID_E + VALID_R * VALID_PRIV)) % CURVE_ORDER
+    VALID_S = (
+        pow(VALID_K, -1, CURVE_ORDER) * (VALID_E + VALID_R * VALID_PRIV)
+    ) % CURVE_ORDER
     VALID_SIG = encode_der(VALID_R, VALID_S)
 
     def test_recover_success(self) -> None:
@@ -363,7 +361,6 @@ class TestRecoverPublicKey:
 
 
 class TestExtractLegacy:
-
     def test_p2pkh_with_utxo(self) -> None:
         sc = p2pkh_script(TEST_PUB_HASH)
         tx = base_tx(
@@ -438,9 +435,9 @@ class TestExtractLegacy:
 
 
 class TestExtractP2PK:
-
     def test_p2pk_extraction(self) -> None:
         from bitcoin.script.builder import build_p2pk
+
         sc = build_p2pk(TEST_PUB_SEC)
         sig_push = bytes([len(SIG_R1S1_ALL)])
         tx = base_tx(
@@ -454,6 +451,7 @@ class TestExtractP2PK:
 
     def test_p2pk_no_sig(self) -> None:
         from bitcoin.script.builder import build_p2pk
+
         sc = build_p2pk(TEST_PUB_SEC)
         tx = base_tx(script_pubkey=sc)
         records = extract_signatures(tx, utxo_script_pubkeys=[sc])
@@ -461,10 +459,14 @@ class TestExtractP2PK:
 
 
 class TestExtractMultisig:
-
     def test_p2ms_extraction(self) -> None:
-        sc = (bytes([0x51]) + bytes([len(TEST_PUB_SEC)]) + TEST_PUB_SEC +
-              bytes([0x51]) + bytes([0xae]))
+        sc = (
+            bytes([0x51])
+            + bytes([len(TEST_PUB_SEC)])
+            + TEST_PUB_SEC
+            + bytes([0x51])
+            + bytes([0xAE])
+        )
         sig_push = bytes([len(SIG_R1S1_ALL)])
         tx = base_tx(
             script_sig=sig_push + SIG_R1S1_ALL + bytes([0x00]),
@@ -475,15 +477,19 @@ class TestExtractMultisig:
         assert records[0].script_type == classify_script_pubkey(sc)
 
     def test_p2ms_empty_script_sig(self) -> None:
-        sc = (bytes([0x51]) + bytes([len(TEST_PUB_SEC)]) + TEST_PUB_SEC +
-              bytes([0x51]) + bytes([0xae]))
+        sc = (
+            bytes([0x51])
+            + bytes([len(TEST_PUB_SEC)])
+            + TEST_PUB_SEC
+            + bytes([0x51])
+            + bytes([0xAE])
+        )
         tx = base_tx(script_pubkey=sc)
         records = extract_signatures(tx, utxo_script_pubkeys=[sc])
         assert records == []
 
 
 class TestExtractP2WPKH:
-
     def test_p2wpkh_extraction(self) -> None:
         sc = p2wpkh_script(TEST_PUB_HASH)
         witness = Witness((SIG_R1S1_ALL, TEST_PUB_SEC))
@@ -531,7 +537,6 @@ class TestExtractP2WPKH:
 
 
 class TestExtractP2WSH:
-
     def test_p2wsh_extraction(self) -> None:
         witness_script = bytes([33]) + TEST_PUB_SEC + b"\xac"
         sc = p2wsh_script(sha256(witness_script))
@@ -585,7 +590,6 @@ class TestExtractP2WSH:
 
 
 class TestExtractP2SHSegWit:
-
     def test_p2sh_p2wpkh(self) -> None:
         redeem_script = p2wpkh_script(TEST_PUB_HASH)
         sc = p2sh_script(hash160(redeem_script))
@@ -727,7 +731,6 @@ class TestExtractP2SHSegWit:
 
 
 class TestExtractTaproot:
-
     def test_key_path_64_bytes(self) -> None:
         sc = p2tr_script(b"\x00" * 32)
         tx = base_tx(
@@ -863,7 +866,6 @@ class TestExtractTaproot:
 
 
 class TestExtractUnknownScriptType:
-
     def test_unknown_script_type(self) -> None:
         """Empty script_pubkey → 'unknown' script type."""
         tx = base_tx(
@@ -876,7 +878,6 @@ class TestExtractUnknownScriptType:
 
 
 class TestExtractPubkeyFromScriptSig:
-
     def test_extract_success(self) -> None:
         from bitcoin.script.parser import parse_script
         from bitcoin.signature.extraction.engine import extract_pubkey_from_script_sig
@@ -902,7 +903,6 @@ class TestExtractPubkeyFromScriptSig:
 
 
 class TestExtractGuessP2PKH:
-
     def test_guess_found(self) -> None:
         from bitcoin.script.parser import parse_script
         from bitcoin.signature.extraction.engine import guess_p2pkh_script
@@ -925,7 +925,6 @@ class TestExtractGuessP2PKH:
 
 
 class TestExtractP2WPKHScriptCode:
-
     def test_normal(self) -> None:
         from bitcoin.signature.extraction.engine import p2wpkh_script_code
 
@@ -955,7 +954,6 @@ class TestExtractP2WPKHScriptCode:
 
 
 class TestExtractDefaultScriptCode:
-
     def test_default(self) -> None:
         from bitcoin.signature.extraction.engine import default_script_code
 
@@ -963,7 +961,6 @@ class TestExtractDefaultScriptCode:
 
 
 class TestExtractRecoverOrParsePubkey:
-
     def test_pubkey_bytes_fallback(self) -> None:
         """When recovery fails and pubkey_bytes is valid, fallback works."""
         from bitcoin.signature.extraction.engine import recover_or_parse_pubkey
@@ -1034,7 +1031,6 @@ class TestExtractRecoverOrParsePubkey:
 
 
 class TestExtractScriptType:
-
     def test_unknown_type(self) -> None:
         from bitcoin.signature.extraction.engine import determine_script_type
 
@@ -1048,7 +1044,6 @@ class TestExtractScriptType:
 
 
 class TestExtractComputeSighash:
-
     def test_legacy(self) -> None:
         from bitcoin.signature.extraction.engine import compute_sighash
 
@@ -1065,7 +1060,6 @@ class TestExtractComputeSighash:
 
 
 class TestExtractDeterministicBehavior:
-
     def test_empty_tx_no_records(self) -> None:
         tx = Tx(version=1, inputs=(), outputs=(), lock_time=0)
         assert extract_signatures(tx) == []

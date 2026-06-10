@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Test that the top-level public API imports correctly and has no circular deps."""
 
 import bitcoin
@@ -55,11 +57,14 @@ def test_removed_exceptions_gone() -> None:
     """Verify removed exception classes no longer exist."""
     import bitcoin.exceptions
 
-    for name in ("InvalidSignature", "InvalidDerSignature",
-                 "NotInvertibleError", "InvalidLinearCoefficientError",
-                 "NonInvertibleLinearCoefficientError"):
-        assert not hasattr(bitcoin.exceptions,
-                           name), f"{name} should have been removed"
+    for name in (
+        "InvalidSignature",
+        "InvalidDerSignature",
+        "NotInvertibleError",
+        "InvalidLinearCoefficientError",
+        "NonInvertibleLinearCoefficientError",
+    ):
+        assert not hasattr(bitcoin.exceptions, name), f"{name} should have been removed"
 
 
 def test_derive_linear_coefficients_import_path() -> None:
@@ -69,6 +74,7 @@ def test_derive_linear_coefficients_import_path() -> None:
         LinearCoefficientRecord,
         derive_linear_coefficients,
     )
+
     assert callable(derive_linear_coefficients)
     assert LinearCoefficientCollection is not None
     assert LinearCoefficientRecord is not None
@@ -82,6 +88,7 @@ def test_attack_imports_correct() -> None:
         detect_nonce_reuse,
         recover_from_nonce_reuse,
     )
+
     assert RecoveredKey is not None
     assert NonceReuseGroup is not None
     assert callable(recover_from_nonce_reuse)
@@ -91,6 +98,7 @@ def test_attack_imports_correct() -> None:
 def test_signer_imports() -> None:
     """Verify signer module imports."""
     from bitcoin.signature import sign, sign_tx_input
+
     assert callable(sign)
     assert callable(sign_tx_input)
 

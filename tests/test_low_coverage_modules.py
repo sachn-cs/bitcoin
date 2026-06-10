@@ -1,4 +1,7 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Coverage for libsec.py, binary.py, script/parser.py."""
+
 from __future__ import annotations
 
 import pytest
@@ -37,7 +40,6 @@ except ImportError:
 
 @pytest.mark.skipif(not HAS_LIBSEC, reason="coincurve not installed")
 class TestLibsecBackend:
-
     def setup_method(self) -> None:
         self.backend = LibsecpBackend()
         self.pt = GENERATOR
@@ -67,6 +69,7 @@ class TestLibsecBackend:
 
     def test_sqrt(self) -> None:
         from bitcoin.curve.params import FIELD_PRIME
+
         val = 42
         root = self.backend.sqrt(val)
         assert (root * root) % FIELD_PRIME == val
@@ -95,7 +98,6 @@ class TestLibsecBackend:
 
 
 class TestBinary:
-
     def test_bytes_to_int(self) -> None:
         assert bytes_to_int(b"\x01\x00", "big") == 256
         assert bytes_to_int(b"\x01\x00", "little") == 1
@@ -132,7 +134,6 @@ class TestBinary:
 
 
 class TestScriptParser:
-
     def test_parse_script_empty(self) -> None:
         assert parse_script(b"") == []
 
@@ -140,7 +141,7 @@ class TestScriptParser:
         assert parse_script(b"\x00") == [b""]
 
     def test_parse_script_op_1negate(self) -> None:
-        assert parse_script(b"\x4f") == [0x4f]
+        assert parse_script(b"\x4f") == [0x4F]
 
     def test_parse_script_small_push(self) -> None:
         result = parse_script(b"\x02ab")
@@ -163,22 +164,21 @@ class TestScriptParser:
         assert parse_script(b"\x60") == [0x60]
 
     def test_parse_script_unknown_op(self) -> None:
-        assert parse_script(b"\xba") == [0xba]
+        assert parse_script(b"\xba") == [0xBA]
 
     def test_parse_script_multi_element(self) -> None:
         script = b"\x76\xa9\x14" + b"\x00" * 20 + b"\x88\xac"
         result = parse_script(script)
         assert len(result) == 5
         assert result[0] == 0x76
-        assert result[1] == 0xa9
+        assert result[1] == 0xA9
         assert isinstance(result[2], bytes)
         assert len(result[2]) == 20
         assert result[3] == 0x88
-        assert result[4] == 0xac
+        assert result[4] == 0xAC
 
 
 class TestParseScriptChunks:
-
     def test_empty(self) -> None:
         assert parse_script_chunks(b"") == []
 
@@ -191,7 +191,7 @@ class TestParseScriptChunks:
 
     def test_op_1negate(self) -> None:
         chunks = parse_script_chunks(b"\x4f")
-        assert chunks[0].opcode == 0x4f
+        assert chunks[0].opcode == 0x4F
         assert chunks[0].data is None
         assert not chunks[0].is_push
 
@@ -221,12 +221,11 @@ class TestParseScriptChunks:
 
     def test_other_opcode(self) -> None:
         chunks = parse_script_chunks(b"\xab")
-        assert chunks[0].opcode == 0xab
+        assert chunks[0].opcode == 0xAB
         assert chunks[0].data is None
 
 
 class TestChunksToPushes:
-
     def test_basic(self) -> None:
         chunks = [
             ScriptChunk(opcode=0x00, data=b""),
@@ -238,18 +237,15 @@ class TestChunksToPushes:
 
 
 class TestRejectCodeSeparators:
-
     def test_no_separator(self) -> None:
         assert reject_code_separators(b"\x51\x52") == b"\x51\x52"
 
     def test_separator_raises(self) -> None:
-        with pytest.raises(UnsupportedScriptPathError,
-                           match="OP_CODESEPARATOR"):
+        with pytest.raises(UnsupportedScriptPathError, match="OP_CODESEPARATOR"):
             reject_code_separators(b"\xab")
 
 
 class TestSerializeScript:
-
     def test_empty(self) -> None:
         assert serialize_script([]) == b""
 
@@ -265,21 +261,21 @@ class TestSerializeScript:
     def test_pushdata1(self) -> None:
         data = b"\x01" * 76
         result = serialize_script([data])
-        assert result[0] == 0x4c
+        assert result[0] == 0x4C
         assert result[1] == 76
         assert result[2:] == data
 
     def test_pushdata2(self) -> None:
         data = b"\x01" * 256
         result = serialize_script([data])
-        assert result[0] == 0x4d
+        assert result[0] == 0x4D
         assert int.from_bytes(result[1:3], "little") == 256
         assert result[3:] == data
 
     def test_pushdata4(self) -> None:
         data = b"\x01" * 65536
         result = serialize_script([data])
-        assert result[0] == 0x4e
+        assert result[0] == 0x4E
         assert int.from_bytes(result[1:5], "little") == 65536
         assert result[5:] == data
 
@@ -291,7 +287,7 @@ class TestSerializeScript:
         assert serialize_script([16]) == b"\x10"
 
     def test_int_unknown(self) -> None:
-        assert serialize_script([0xba]) == b"\xba"
+        assert serialize_script([0xBA]) == b"\xba"
 
     def test_type_error(self) -> None:
         with pytest.raises(TypeError, match="Unexpected"):
@@ -304,7 +300,6 @@ class TestSerializeScript:
 
 
 class TestScriptToString:
-
     def test_bytes_element(self) -> None:
         assert script_to_string([b"\x00\x01"]) == "0001"
 
@@ -312,24 +307,28 @@ class TestScriptToString:
         assert script_to_string([0x76]) == "OP_DUP"
 
     def test_unknown_opcode(self) -> None:
-        assert script_to_string([0xba]) == "OP_UNKNOWN(186)"
+        assert script_to_string([0xBA]) == "OP_UNKNOWN(186)"
 
     def test_mixed(self) -> None:
-        result = script_to_string([0x76, b"\x00" * 20, 0xac])
+        result = script_to_string([0x76, b"\x00" * 20, 0xAC])
         assert result == "OP_DUP 0000000000000000000000000000000000000000 OP_CHECKSIG"
 
 
 class TestParseMultisigRedeemScript:
-
     def test_valid_2_of_3(self) -> None:
         pk1 = b"\x02" + b"\x01" * 32
         pk2 = b"\x03" + b"\x02" * 32
         pk3 = b"\x02" + b"\x03" * 32
         script = (
             bytes([0x52])  # OP_2
-            + bytes([len(pk1)]) + pk1 + bytes([len(pk2)]) + pk2 +
-            bytes([len(pk3)]) + pk3 + bytes([0x53])  # OP_3
-            + bytes([0xac])  # OP_CHECKSIG
+            + bytes([len(pk1)])
+            + pk1
+            + bytes([len(pk2)])
+            + pk2
+            + bytes([len(pk3)])
+            + pk3
+            + bytes([0x53])  # OP_3
+            + bytes([0xAC])  # OP_CHECKSIG
         )
         m, pubkeys = parse_multisig_redeem_script(script)
         assert m == 2
@@ -346,8 +345,7 @@ class TestParseMultisigRedeemScript:
     def test_bad_pubkey_type(self) -> None:
         """First element is a push (data not None) → invalid structure."""
         script = b"\x02ab\x51\x51\xac"
-        with pytest.raises(UnsupportedScriptPathError,
-                           match="invalid structure"):
+        with pytest.raises(UnsupportedScriptPathError, match="invalid structure"):
             parse_multisig_redeem_script(script)
 
     def test_invalid_m_value(self) -> None:
@@ -368,8 +366,7 @@ class TestParseMultisigRedeemScript:
     def test_bad_pubkey_length(self) -> None:
         pk = b"\x01" * 10
         script = b"\x51" + bytes([len(pk)]) + pk + b"\x51\xac"
-        with pytest.raises(UnsupportedScriptPathError,
-                           match="public key length"):
+        with pytest.raises(UnsupportedScriptPathError, match="public key length"):
             parse_multisig_redeem_script(script)
 
     def test_invalid_threshold(self) -> None:
@@ -377,9 +374,12 @@ class TestParseMultisigRedeemScript:
         pk2 = b"\x03" + b"\x02" * 32
         script = (
             bytes([0x53])  # OP_3 (m=3)
-            + bytes([len(pk1)]) + pk1 + bytes([len(pk2)]) + pk2 +
-            bytes([0x52])  # OP_2 (n=2)
-            + bytes([0xac])  # OP_CHECKSIG
+            + bytes([len(pk1)])
+            + pk1
+            + bytes([len(pk2)])
+            + pk2
+            + bytes([0x52])  # OP_2 (n=2)
+            + bytes([0xAC])  # OP_CHECKSIG
         )
         with pytest.raises(UnsupportedScriptPathError, match="threshold"):
             parse_multisig_redeem_script(script)
@@ -389,10 +389,10 @@ class TestParseMultisigRedeemScript:
 
 
 class TestOperationsEdgeCases:
-
     def test_negate_non_infinity_with_y(self) -> None:
         from bitcoin.curve import GENERATOR
         from bitcoin.curve.operations import negate
+
         result = negate(GENERATOR)
         assert GENERATOR.y is not None
         assert result.x == GENERATOR.x
@@ -401,53 +401,64 @@ class TestOperationsEdgeCases:
 
     def test_add_both_infinity(self) -> None:
         from bitcoin.curve.operations import add
+
         result = add(INFINITY, INFINITY)
         assert result.infinity
 
     def test_double_infinity(self) -> None:
         from bitcoin.curve.operations import double
+
         result = double(INFINITY)
         assert result.infinity
 
     def test_double_point_with_y_zero(self) -> None:
         from bitcoin.curve.operations import double
+
         y_zero = Point(x=0, y=0)
         result = double(y_zero)
         assert result.infinity
 
     def test_ops_multiply_by_zero(self) -> None:
         from bitcoin.curve.operations import multiply as ops_multiply
+
         result = ops_multiply(0, GENERATOR)
         assert result.infinity
 
     def test_ops_multiply_infinity(self) -> None:
         from bitcoin.curve.operations import multiply as ops_multiply
+
         result = ops_multiply(5, INFINITY)
         assert result.infinity
 
     def test_ops_multiply_zero_after_reduction(self) -> None:
         from bitcoin.curve.operations import multiply as ops_multiply
+
         result = ops_multiply(CURVE_ORDER, GENERATOR)
         assert result.infinity
 
     def test_is_on_curve_with_none_coords(self) -> None:
         from bitcoin.curve.operations import is_on_curve
+
         assert is_on_curve(INFINITY)
 
     def test_bits_zero(self) -> None:
         from bitcoin.curve.operations import bits
+
         assert bits(0) == [0]
 
     def test_bits_one(self) -> None:
         from bitcoin.curve.operations import bits
+
         assert bits(1) == [1]
 
     def test_bits_large(self) -> None:
         from bitcoin.curve.operations import bits
+
         assert bits(255) == [1, 1, 1, 1, 1, 1, 1, 1]
 
     def test_add_points_with_different_x(self) -> None:
         from bitcoin.curve.operations import add
+
         p1 = GENERATOR
         p2 = double(p1)
         result = add(p1, p2)
@@ -456,6 +467,7 @@ class TestOperationsEdgeCases:
 
     def test_add_points_negated(self) -> None:
         from bitcoin.curve.operations import add
+
         assert GENERATOR.y is not None
         neg_gen = Point(x=GENERATOR.x, y=FIELD_PRIME - GENERATOR.y)
         result = add(GENERATOR, neg_gen)
@@ -466,13 +478,13 @@ class TestOperationsEdgeCases:
 
 
 class TestPointEdgeCases:
-
     def test_point_missing_coordinates(self) -> None:
         with pytest.raises(ValueError, match="requires both x and y"):
             Point(x=5, y=None)  # type: ignore[arg-type]
 
     def test_point_y_out_of_range(self) -> None:
         from bitcoin.curve.params import FIELD_PRIME
+
         with pytest.raises(ValueError, match="y coordinate out of field"):
             Point(x=1, y=FIELD_PRIME)
 
@@ -489,6 +501,7 @@ class TestPointEdgeCases:
 
     def test_x_out_of_range(self) -> None:
         from bitcoin.curve.params import FIELD_PRIME
+
         with pytest.raises(ValueError, match="x coordinate out of field"):
             Point(x=FIELD_PRIME, y=1)
 
@@ -507,18 +520,20 @@ class TestPointEdgeCases:
 
 
 class TestDispatchCoverage:
-
     def test_is_generator_infinity(self) -> None:
         from bitcoin.curve.dispatch import is_generator
+
         assert not is_generator(INFINITY)
 
     def test_normalize(self) -> None:
         from bitcoin.curve.dispatch import normalize
+
         assert normalize(FIELD_PRIME + 5) == 5
         assert normalize(-1) == FIELD_PRIME - 1
 
     def test_normalize_non_negative(self) -> None:
         from bitcoin.curve.dispatch import normalize_non_negative
+
         val = normalize_non_negative(42, "test")
         assert val == 42
 
@@ -526,13 +541,14 @@ class TestDispatchCoverage:
         import re
 
         from bitcoin.curve.dispatch import normalize_non_negative
-        with pytest.raises(ValueError,
-                           match=re.escape("test must be non-negative")):
+
+        with pytest.raises(ValueError, match=re.escape("test must be non-negative")):
             normalize_non_negative(-1, "test")
 
     def test_sqrt_field(self) -> None:
         from bitcoin.curve.dispatch import sqrt_field
         from bitcoin.curve.params import FIELD_PRIME
+
         val = 4 % FIELD_PRIME
         result = sqrt_field(val)
         assert (result * result) % FIELD_PRIME == val
@@ -540,6 +556,7 @@ class TestDispatchCoverage:
     def test_set_backend_then_get(self) -> None:
         from bitcoin.curve.backend.native import NativeBackend
         from bitcoin.curve.dispatch import get_backend, resolve_backend, set_backend
+
         backend = NativeBackend()
         set_backend(backend)
         assert get_backend() is backend
@@ -550,10 +567,10 @@ class TestDispatchCoverage:
 
 
 class TestNativeBackendCoverage:
-
     def test_sqrt(self) -> None:
         from bitcoin.curve.backend.native import NativeBackend
         from bitcoin.curve.params import FIELD_PRIME
+
         backend = NativeBackend()
         val = 4 % FIELD_PRIME
         result = backend.sqrt(val)
@@ -564,9 +581,9 @@ class TestNativeBackendCoverage:
 
 
 class TestVarintCoverage:
-
     def test_encode_decode_roundtrip_large(self) -> None:
         from bitcoin.encoding.varint import decode_varint, encode_varint
+
         for val in [0, 1, 252, 253, 65535, 65536, 2**32 - 1, 2**32]:
             encoded = encode_varint(val)
             decoded, consumed = decode_varint(encoded)
@@ -577,18 +594,20 @@ class TestVarintCoverage:
 
 
 class TestBinaryCoverage:
-
     def test_read_exactly_short(self) -> None:
         from bitcoin.encoding.binary import read_exactly
+
         with pytest.raises(ValueError, match="only has"):
             read_exactly(b"\x00\x01", 5)
 
     def test_iter_bytes_empty(self) -> None:
         from bitcoin.encoding.binary import iter_bytes
+
         assert list(iter_bytes(b"", 32)) == []
 
     def test_iter_bytes_partial(self) -> None:
         from bitcoin.encoding.binary import iter_bytes
+
         chunks = list(iter_bytes(b"\x01\x02\x03", 2))
         assert len(chunks) == 2
         assert chunks[0] == b"\x01\x02"

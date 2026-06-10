@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Tests for the new field/ package (modular arithmetic, sqrt)."""
 
 import pytest
@@ -7,7 +9,6 @@ from bitcoin.field import inverse, pow_mod, sqrt, validate_non_negative
 
 
 class TestInverse:
-
     def test_basic(self) -> None:
         assert inverse(3, 7) == 5
         assert (3 * inverse(3, 7)) % 7 == 1
@@ -41,7 +42,6 @@ class TestInverse:
 
 
 class TestSqrt:
-
     def test_sqrt_known(self) -> None:
         p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
         val = pow(42, 2, p)
@@ -66,7 +66,6 @@ class TestSqrt:
 
 
 class TestValidateNonNegative:
-
     def test_valid(self) -> None:
         assert validate_non_negative(0) == 0
         assert validate_non_negative(42) == 42
@@ -81,7 +80,6 @@ class TestValidateNonNegative:
 
 
 class TestRoundtrip:
-
     def test_inverse_sqrt_interop(self) -> None:
         p = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F
         inv = inverse(4, p)

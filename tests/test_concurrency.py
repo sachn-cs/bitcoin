@@ -1,5 +1,8 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 # ruff: noqa: E501
 """Threading and concurrency safety tests."""
+
 from __future__ import annotations
 
 import threading
@@ -19,7 +22,6 @@ from bitcoin.settings import Settings
 
 
 class TestSettingsThreadSafety:
-
     def test_concurrent_read_write(self) -> None:
         local_settings = Settings()
         errors: list[Exception] = []
@@ -67,13 +69,14 @@ class TestSettingsThreadSafety:
 
 
 class TestBackendDispatchRaceCondition:
-
     def setup_method(self) -> None:
         import bitcoin.curve.dispatch as d
+
         d.backend = None
 
     def teardown_method(self) -> None:
         import bitcoin.curve.dispatch as d
+
         d.backend = None
 
     def test_set_and_get_concurrent(self) -> None:
@@ -92,8 +95,9 @@ class TestBackendDispatchRaceCondition:
             except Exception as exc:
                 errors.append(exc)
 
-        threads = ([threading.Thread(target=setter) for _ in range(2)] +
-                   [threading.Thread(target=getter) for _ in range(2)])
+        threads = [threading.Thread(target=setter) for _ in range(2)] + [
+            threading.Thread(target=getter) for _ in range(2)
+        ]
         for t in threads:
             t.start()
         for t in threads:
@@ -143,13 +147,14 @@ class TestBackendDispatchRaceCondition:
 
 
 class TestMultiplyScalarNormalization:
-
     def setup_method(self) -> None:
         import bitcoin.curve.dispatch as d
+
         d.backend = None
 
     def teardown_method(self) -> None:
         import bitcoin.curve.dispatch as d
+
         d.backend = None
 
     def test_negative_scalar_raises(self) -> None:
@@ -174,7 +179,6 @@ class TestMultiplyScalarNormalization:
 
 
 class TestPsbtMaxSizeLimits:
-
     def test_key_exceeds_max_size(self) -> None:
         from bitcoin.encoding.varint import encode_varint
         from bitcoin.psbt import parse_psbt
@@ -194,7 +198,8 @@ class TestPsbtMaxSizeLimits:
 
         magic = b"psbt\xff"
         data = (
-            magic + encode_varint(1)  # key_len = 1
+            magic
+            + encode_varint(1)  # key_len = 1
             + b"\x00"  # key_type = 0 (unsigned tx)
             + encode_varint(MAX_VALUE_SIZE + 1)  # value_len too large
         )

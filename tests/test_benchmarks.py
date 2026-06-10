@@ -1,4 +1,7 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Benchmarks for ECC operations."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

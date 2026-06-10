@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """SegWit v0 sighash computation (BIP-143).
 
 This module implements the BIP-143 signature hash algorithm used for
@@ -25,8 +27,9 @@ ZERO_HASH_32 = b"\x00" * 32
 
 
 @functools.lru_cache(maxsize=128)
-def sighash_segwit(transaction: Tx, input_index: int, script: bytes, value: int,
-                   sighash_flag: int) -> bytes:
+def sighash_segwit(
+    transaction: Tx, input_index: int, script: bytes, value: int, sighash_flag: int
+) -> bytes:
     """Compute the BIP-143 SegWit v0 sighash for a transaction input.
 
     Unlike the legacy algorithm, the amount being spent is committed to
@@ -55,18 +58,25 @@ def sighash_segwit(transaction: Tx, input_index: int, script: bytes, value: int,
     if sighash_flag & SIGHASH_ANYONECANPAY:
         data.extend(ZERO_HASH_32)
     else:
-        hash_prevouts = hash256(b"".join(
-            txin.previous_output.txid + txin.previous_output.vout.to_bytes(4, "little")
-            for txin in transaction.inputs))
+        hash_prevouts = hash256(
+            b"".join(
+                txin.previous_output.txid
+                + txin.previous_output.vout.to_bytes(4, "little")
+                for txin in transaction.inputs
+            )
+        )
         data.extend(hash_prevouts)
 
     # Hash sequences
-    if (sighash_flag & SIGHASH_ANYONECANPAY or
-        (sighash_flag & SIGHASH_MASK) in (SIGHASH_NONE, SIGHASH_SINGLE)):
+    if sighash_flag & SIGHASH_ANYONECANPAY or (sighash_flag & SIGHASH_MASK) in (
+        SIGHASH_NONE,
+        SIGHASH_SINGLE,
+    ):
         data.extend(ZERO_HASH_32)
     else:
-        hash_sequence = hash256(b"".join(
-            txin.sequence.to_bytes(4, "little") for txin in transaction.inputs))
+        hash_sequence = hash256(
+            b"".join(txin.sequence.to_bytes(4, "little") for txin in transaction.inputs)
+        )
         data.extend(hash_sequence)
 
     # Outpoint being spent
@@ -90,16 +100,26 @@ def sighash_segwit(transaction: Tx, input_index: int, script: bytes, value: int,
         data.extend(ZERO_HASH_32)
     elif (sighash_flag & SIGHASH_MASK) == SIGHASH_SINGLE:
         if input_index >= len(transaction.outputs):
-            raise ValueError(f"Input {input_index} out of range for SIGHASH_SINGLE "
-                             f"(only {len(transaction.outputs)} outputs).")
+            raise ValueError(
+                f"Input {input_index} out of range for SIGHASH_SINGLE "
+                f"(only {len(transaction.outputs)} outputs)."
+            )
         out = transaction.outputs[input_index]
-        hash_outputs_data = (out.value.to_bytes(8, "little") +
-                             encode_varint(len(out.script_pubkey)) + out.script_pubkey)
+        hash_outputs_data = (
+            out.value.to_bytes(8, "little")
+            + encode_varint(len(out.script_pubkey))
+            + out.script_pubkey
+        )
         data.extend(hash256(hash_outputs_data))
     else:
-        hash_outputs = hash256(b"".join(
-            out.value.to_bytes(8, "little") + encode_varint(len(out.script_pubkey)) +
-            out.script_pubkey for out in transaction.outputs))
+        hash_outputs = hash256(
+            b"".join(
+                out.value.to_bytes(8, "little")
+                + encode_varint(len(out.script_pubkey))
+                + out.script_pubkey
+                for out in transaction.outputs
+            )
+        )
         data.extend(hash_outputs)
 
     data.extend(transaction.lock_time.to_bytes(4, "little"))

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Bitcoin variable-length integer (``varint``) encoding."""
 
 
@@ -51,16 +53,16 @@ def decode_varint(stream: bytes, offset: int = 0) -> tuple[int, int]:
         needed = offset + 3
         if len(stream) < needed:
             raise ValueError("Truncated varint stream.")
-        n = int.from_bytes(stream[offset + 1:needed], "little")
+        n = int.from_bytes(stream[offset + 1 : needed], "little")
         return n, needed
     if prefix == 0xFE:
         needed = offset + 5
         if len(stream) < needed:
             raise ValueError("Truncated varint stream.")
-        n = int.from_bytes(stream[offset + 1:needed], "little")
+        n = int.from_bytes(stream[offset + 1 : needed], "little")
         return n, needed
     needed = offset + 9
     if len(stream) < needed:
         raise ValueError("Truncated varint stream.")
-    n = int.from_bytes(stream[offset + 1:needed], "little")
+    n = int.from_bytes(stream[offset + 1 : needed], "little")
     return n, needed

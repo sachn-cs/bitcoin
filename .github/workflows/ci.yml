@@ -27,13 +27,8 @@ jobs:
           enable-cache: true
           cache-suffix: ${{ matrix.python-version }}
       - run: uv sync --extra dev --frozen
-      - name: Check yapf formatting
-        run: |
-          if uv run yapf -d -r ./bitcoin | grep . > /dev/null 2>&1; then
-            echo "yapf: formatting changes detected"
-            exit 1
-          fi
-          echo "yapf: no formatting changes needed"
+      - name: Check formatting with ruff
+        run: uv run ruff format --check bitcoin/ tests/
       - run: uv run ruff check bitcoin/ tests/
       - run: uv run mypy bitcoin/
       - run: uv run mypy tests/ --ignore-missing-imports

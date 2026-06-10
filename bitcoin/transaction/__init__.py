@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Bitcoin transaction types, parsing, and construction.
 
 This module re-exports the core transaction model classes and utility

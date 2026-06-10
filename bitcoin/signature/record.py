@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Frozen dataclass representing a single extracted ECDSA or Schnorr signature."""
 
 from __future__ import annotations
@@ -68,7 +70,8 @@ class Record:
             raise ValueError(f"txid must be 32 bytes, got {len(self.txid)}.")
         if self.input_index < 0:
             raise ValueError(
-                f"input_index must be non-negative, got {self.input_index}.")
+                f"input_index must be non-negative, got {self.input_index}."
+            )
         if not isinstance(self.signature, bytes) or len(self.signature) == 0:
             raise ValueError("signature must be non-empty bytes.")
         if self.amount < 0:

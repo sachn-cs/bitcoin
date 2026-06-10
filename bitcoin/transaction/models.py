@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Immutable data models for Bitcoin transaction components.
 
 Provides ``OutPoint``, ``TxIn``, ``TxOut``, ``Witness``, and ``Tx``
@@ -116,6 +118,7 @@ class Tx:
             A ``TxSerializer`` instance bound to this transaction.
         """
         from bitcoin.transaction.tx_services import TxSerializer
+
         return TxSerializer(self)
 
     @property
@@ -126,6 +129,7 @@ class Tx:
             A ``TxRbf`` instance bound to this transaction.
         """
         from bitcoin.transaction.tx_services import TxRbf
+
         return TxRbf(self)
 
     @property
@@ -136,6 +140,7 @@ class Tx:
             A ``TxSighash`` instance bound to this transaction.
         """
         from bitcoin.transaction.tx_services import TxSighash
+
         return TxSighash(self)
 
     def is_segwit(self) -> bool:

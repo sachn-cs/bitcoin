@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """ECDSA nonce recovery and private-key recovery from signature weaknesses.
 
 Given two signatures created by the same private key, this module exploits:
@@ -9,6 +11,7 @@ Given two signatures created by the same private key, this module exploits:
   :math:`k_1 = (\\beta_1 - \\beta_2 + \\alpha_2 \\cdot \\delta)`
   :math:`\\cdot (\\alpha_1 - \\alpha_2)^{-1} \\pmod{n}`
 """
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -95,8 +98,10 @@ def recover_from_nonce_reuse(
 
     alpha_diff = (record_1.alpha - record_2.alpha) % CURVE_ORDER
     if alpha_diff == 0:
-        raise SameNonceError("alpha values are identical; signatures may not be from"
-                             " the same private key.")
+        raise SameNonceError(
+            "alpha values are identical; signatures may not be from"
+            " the same private key."
+        )
 
     beta_diff = (record_1.beta - record_2.beta) % CURVE_ORDER
     alpha_diff_inv = field_inverse(alpha_diff, CURVE_ORDER)
@@ -149,7 +154,8 @@ def recover_from_related_nonces(
 
 
 def detect_nonce_reuse(
-    collection: LinearCoefficientCollection,) -> list[NonceReuseGroup]:
+    collection: LinearCoefficientCollection,
+) -> list[NonceReuseGroup]:
     """Find groups of signatures that share the same ``r`` value.
 
     Args:

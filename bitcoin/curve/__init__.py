@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Secp256k1 curve arithmetic, backends, and the ``Point`` type.
 
 Everything in this package is independent of Bitcoin transactions,

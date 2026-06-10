@@ -1,4 +1,7 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Tests for transaction serialization."""
+
 from __future__ import annotations
 
 import json
@@ -9,7 +12,6 @@ from bitcoin.services.serializer import serialize_legacy_tx, serialize_tx, tx_to
 
 
 class TestSerializeTx:
-
     def test_serialize_legacy_empty(self) -> None:
         """Empty legacy transaction serializes correctly."""
         tx = Tx(version=1, inputs=(), outputs=(), lock_time=0)

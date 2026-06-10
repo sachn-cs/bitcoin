@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Native pure-Python secp256k1 backend."""
 
 from __future__ import annotations
@@ -83,6 +85,7 @@ class NativeBackend(CurveBackend):
             The square root modulo FIELD_PRIME.
         """
         from bitcoin.curve.params import FIELD_PRIME
+
         return field_sqrt(value, FIELD_PRIME)
 
     def parse_sec(self, data: bytes) -> Point:

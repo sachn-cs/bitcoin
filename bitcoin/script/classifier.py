@@ -1,9 +1,12 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Standard script type classification for Bitcoin Script.
 
 Provides ``classify_script_pubkey`` and ``classify_script_sig`` for
 recognising standard output and spending script types, along with
 constants naming each type identifier.
 """
+
 from __future__ import annotations
 
 from bitcoin.script.opcodes import (
@@ -48,26 +51,35 @@ def classify_script_pubkey(script: bytes) -> str:
         return NON_STANDARD
 
     # P2PKH: OP_DUP OP_HASH160 <20 bytes> OP_EQUALVERIFY OP_CHECKSIG
-    if (len(script) == 25 and script[0] == OP_DUP and script[1] == OP_HASH160 and
-            script[2] == 0x14 and script[23] == OP_EQUALVERIFY and
-            script[24] == OP_CHECKSIG):
+    if (
+        len(script) == 25
+        and script[0] == OP_DUP
+        and script[1] == OP_HASH160
+        and script[2] == 0x14
+        and script[23] == OP_EQUALVERIFY
+        and script[24] == OP_CHECKSIG
+    ):
         return P2PKH
 
     # P2SH: OP_HASH160 <20 bytes> OP_EQUAL
-    if (len(script) == 23 and script[0] == OP_HASH160 and script[1] == 0x14 and
-            script[-1] == OP_EQUAL):
+    if (
+        len(script) == 23
+        and script[0] == OP_HASH160
+        and script[1] == 0x14
+        and script[-1] == OP_EQUAL
+    ):
         return P2SH
 
     # P2WPKH: OP_0 <20 bytes>
-    if (len(script) == 22 and script[0] == OP_0 and script[1] == 0x14):
+    if len(script) == 22 and script[0] == OP_0 and script[1] == 0x14:
         return P2WPKH
 
     # P2WSH: OP_0 <32 bytes>
-    if (len(script) == 34 and script[0] == OP_0 and script[1] == 0x20):
+    if len(script) == 34 and script[0] == OP_0 and script[1] == 0x20:
         return P2WSH
 
     # P2TR: OP_1 <32 bytes>
-    if (len(script) == 34 and script[0] == OP_1 and script[1] == 0x20):
+    if len(script) == 34 and script[0] == OP_1 and script[1] == 0x20:
         return P2TR
 
     # P2PK: <push> <pubkey> OP_CHECKSIG (simplified heuristic)
@@ -117,13 +129,13 @@ def parse_p2pkh_script_sig(script: bytes) -> tuple[bytes, bytes]:
         raise ValueError("Empty scriptSig.")
     sig_len = script[0]
     offset = 1
-    sig = script[offset:offset + sig_len]
+    sig = script[offset : offset + sig_len]
     offset += sig_len
     if offset >= len(script):
         raise ValueError("Truncated scriptSig (missing pubkey).")
     pubkey_len = script[offset]
     offset += 1
-    pubkey = script[offset:offset + pubkey_len]
+    pubkey = script[offset : offset + pubkey_len]
     return sig, pubkey
 
 
@@ -187,8 +199,10 @@ def has_timelocks(script_pubkey: bytes) -> bool:
     Returns:
         ``True`` if either timelock opcode is present.
     """
-    return (OP_CHECKLOCKTIMEVERIFY in script_pubkey or
-            OP_CHECKSEQUENCEVERIFY in script_pubkey)
+    return (
+        OP_CHECKLOCKTIMEVERIFY in script_pubkey
+        or OP_CHECKSEQUENCEVERIFY in script_pubkey
+    )
 
 
 def classify_detailed(script_pubkey: bytes) -> str:

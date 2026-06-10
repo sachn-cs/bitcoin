@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Linear coefficient derivation for ECDSA signature analysis.
 
 Given a signature ``(r, s)`` on message hash ``z``, computes the

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Composed engine classes for Tx domain operations.
 
 Provides ``TxSerializer``, ``TxRbf``, and ``TxSighash`` engines
@@ -34,6 +36,7 @@ class TxSerializer:
             Wire-format bytes.
         """
         from bitcoin.services.serializer import serialize_tx
+
         return serialize_tx(self.__tx)
 
     def serialize_legacy(self) -> bytes:
@@ -43,6 +46,7 @@ class TxSerializer:
             Legacy wire-format bytes.
         """
         from bitcoin.services.serializer import serialize_legacy_tx
+
         return serialize_legacy_tx(self.__tx)
 
     def to_json(self) -> dict[str, Any]:
@@ -52,6 +56,7 @@ class TxSerializer:
             A dict representing the full transaction structure.
         """
         from bitcoin.services.serializer import tx_to_json
+
         return tx_to_json(self.__tx)
 
 
@@ -76,6 +81,7 @@ class TxRbf:
             True if at least one input has a BIP-125 signalling sequence.
         """
         from bitcoin.transaction.rbf import is_opt_in_rbf
+
         return is_opt_in_rbf(self.__tx)
 
     def has_sequence_lock(self) -> bool:
@@ -85,6 +91,7 @@ class TxRbf:
             True if at least one input has a relative time lock.
         """
         from bitcoin.transaction.rbf import has_sequence_lock
+
         return has_sequence_lock(self.__tx)
 
 
@@ -114,10 +121,12 @@ class TxSighash:
             32-byte sighash.
         """
         from bitcoin.sighash.legacy import sighash_legacy
+
         return sighash_legacy(self.__tx, input_index, script, sighash_flag)
 
-    def segwit(self, input_index: int, script: bytes, value: int,
-               sighash_flag: int) -> bytes:
+    def segwit(
+        self, input_index: int, script: bytes, value: int, sighash_flag: int
+    ) -> bytes:
         """Compute the BIP-143 SegWit v0 sighash.
 
         Args:
@@ -130,6 +139,7 @@ class TxSighash:
             32-byte sighash.
         """
         from bitcoin.sighash.segwit import sighash_segwit
+
         return sighash_segwit(self.__tx, input_index, script, value, sighash_flag)
 
     def taproot(
@@ -162,6 +172,7 @@ class TxSighash:
             32-byte Taproot sighash.
         """
         from bitcoin.sighash.taproot import sighash_taproot
+
         return sighash_taproot(
             self.__tx,
             input_index,

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """libsecp256k1-backed secp256k1 backend via the ``coincurve`` package."""
 
 from __future__ import annotations
@@ -23,8 +25,10 @@ class LibsecpBackend(CurveBackend):
 
     def __init__(self) -> None:
         check_libsecp256k1()
-        logger.debug("LibsecpBackend initialised; negate/add/double fall back to "
-                     "pure Python because coincurve does not expose them.")
+        logger.debug(
+            "LibsecpBackend initialised; negate/add/double fall back to "
+            "pure Python because coincurve does not expose them."
+        )
 
     def negate(self, point: Point) -> Point:
         """Return the additive inverse of *point* (pure-Python fallback).
@@ -39,6 +43,7 @@ class LibsecpBackend(CurveBackend):
             The negated point.
         """
         from bitcoin.curve.operations import negate
+
         return negate(point)
 
     def add(self, left: Point, right: Point) -> Point:
@@ -55,6 +60,7 @@ class LibsecpBackend(CurveBackend):
             The sum point.
         """
         from bitcoin.curve.operations import add
+
         return add(left, right)
 
     def double(self, point: Point) -> Point:
@@ -70,6 +76,7 @@ class LibsecpBackend(CurveBackend):
             The doubled point.
         """
         from bitcoin.curve.operations import double
+
         return double(point)
 
     def multiply(self, scalar: int, point: Point) -> Point:
@@ -93,6 +100,7 @@ class LibsecpBackend(CurveBackend):
         new_pub = px.multiply(tweak)
         raw = new_pub.format()  # 33-byte compressed
         from bitcoin.encoding.sec import parse_sec
+
         return parse_sec(raw)
 
     def is_on_curve(self, point: Point) -> bool:
@@ -126,6 +134,7 @@ class LibsecpBackend(CurveBackend):
         """
         from bitcoin.curve.params import FIELD_PRIME
         from bitcoin.field.sqrt import sqrt
+
         return sqrt(value, FIELD_PRIME)
 
     def parse_sec(self, data: bytes) -> Point:
@@ -138,6 +147,7 @@ class LibsecpBackend(CurveBackend):
             The parsed Point.
         """
         from bitcoin.encoding.sec import parse_sec
+
         return parse_sec(data)
 
     def serialize_sec(self, point: Point, compressed: bool = True) -> bytes:
@@ -151,4 +161,5 @@ class LibsecpBackend(CurveBackend):
             The SEC-encoded bytes.
         """
         from bitcoin.encoding.sec import serialize_sec
+
         return serialize_sec(point, compressed)

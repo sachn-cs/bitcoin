@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Fluent builder and dict-based factory for Bitcoin transactions.
 
 Provides ``TransactionBuilder`` for programmatic construction with
@@ -40,12 +42,12 @@ class TransactionBuilder:
         self.__outputs: list[dict[str, object]] = []
 
     def add_input(
-            self,
-            txid: bytes,
-            vout: int,
-            script_sig: bytes = b"",
-            sequence: int = 0xFFFFFFFF,
-            witness: tuple[bytes, ...] = (),
+        self,
+        txid: bytes,
+        vout: int,
+        script_sig: bytes = b"",
+        sequence: int = 0xFFFFFFFF,
+        witness: tuple[bytes, ...] = (),
     ) -> Self:
         """Append a transaction input.
 
@@ -59,13 +61,15 @@ class TransactionBuilder:
         Returns:
             ``self`` for chaining.
         """
-        self.__inputs.append({
-            "txid": txid,
-            "vout": vout,
-            "script_sig": script_sig,
-            "sequence": sequence,
-            "witness": witness,
-        })
+        self.__inputs.append(
+            {
+                "txid": txid,
+                "vout": vout,
+                "script_sig": script_sig,
+                "sequence": sequence,
+                "witness": witness,
+            }
+        )
         return self
 
     def add_output(self, value: int, script_pubkey: bytes) -> Self:
@@ -78,10 +82,12 @@ class TransactionBuilder:
         Returns:
             ``self`` for chaining.
         """
-        self.__outputs.append({
-            "value": value,
-            "script_pubkey": script_pubkey,
-        })
+        self.__outputs.append(
+            {
+                "value": value,
+                "script_pubkey": script_pubkey,
+            }
+        )
         return self
 
     def set_lock_time(self, lock_time: int) -> Self:
@@ -144,7 +150,8 @@ class TransactionBuilder:
                     script_sig=script_sig,
                     sequence=sequence,
                     witness=witness,
-                ))
+                )
+            )
 
         txouts: list[TxOut] = []
         for out_data in self.__outputs:

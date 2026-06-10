@@ -1,4 +1,7 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Tests for signature extraction and sighash computation."""
+
 from __future__ import annotations
 
 import pytest
@@ -24,7 +27,6 @@ from bitcoin.curve import GENERATOR
 
 
 class TestExtractSignatures:
-
     def test_extract_empty_tx(self) -> None:
         """Empty transaction has no signatures."""
         tx = Tx(version=1, inputs=(), outputs=(), lock_time=0)
@@ -53,7 +55,6 @@ class TestExtractSignatures:
 
 
 class TestSighashFlags:
-
     def test_sighash_all_value(self) -> None:
         assert SIGHASH_ALL == 0x01
 
@@ -68,12 +69,13 @@ class TestSighashFlags:
 
 
 class TestSighashLegacy:
-
     def __make_tx(self) -> Tx:
-        txin = TxIn(previous_output=OutPoint(txid=b"\x00" * 32, vout=0),
-                    script_sig=b"",
-                    sequence=0xFFFFFFFF,
-                    witness=Witness(()))
+        txin = TxIn(
+            previous_output=OutPoint(txid=b"\x00" * 32, vout=0),
+            script_sig=b"",
+            sequence=0xFFFFFFFF,
+            witness=Witness(()),
+        )
         return Tx(version=1, inputs=(txin,), outputs=(), lock_time=0)
 
     def test_sighash_legacy_returns_32_bytes(self) -> None:
@@ -101,12 +103,13 @@ class TestSighashLegacy:
 
 
 class TestSighashSegwit:
-
     def __make_tx(self) -> Tx:
-        txin = TxIn(previous_output=OutPoint(txid=b"\x00" * 32, vout=0),
-                    script_sig=b"",
-                    sequence=0xFFFFFFFF,
-                    witness=Witness(()))
+        txin = TxIn(
+            previous_output=OutPoint(txid=b"\x00" * 32, vout=0),
+            script_sig=b"",
+            sequence=0xFFFFFFFF,
+            witness=Witness(()),
+        )
         return Tx(version=1, inputs=(txin,), outputs=(), lock_time=0)
 
     def test_sighash_segwit_returns_32_bytes(self) -> None:
@@ -127,12 +130,13 @@ class TestSighashSegwit:
 
 
 class TestSighashTaproot:
-
     def __make_tx(self) -> Tx:
-        txin = TxIn(previous_output=OutPoint(txid=b"\x00" * 32, vout=0),
-                    script_sig=b"",
-                    sequence=0xFFFFFFFF,
-                    witness=Witness(()))
+        txin = TxIn(
+            previous_output=OutPoint(txid=b"\x00" * 32, vout=0),
+            script_sig=b"",
+            sequence=0xFFFFFFFF,
+            witness=Witness(()),
+        )
         txout = TxOut(value=1000, script_pubkey=b"\x51")
         return Tx(version=1, inputs=(txin,), outputs=(txout,), lock_time=0)
 
@@ -149,7 +153,6 @@ class TestSighashTaproot:
 
 
 class TestExtractTaproot:
-
     def __p2tr_script_pubkey(self) -> bytes:
         """Build a minimal P2TR scriptPubKey."""
         pubkey = b"\x00" * 32  # 32-byte x-only pubkey
@@ -218,7 +221,6 @@ class TestExtractTaproot:
 
 
 class TestLinearizeSignatures:
-
     def test_linearize_empty(self) -> None:
         assert linearize_signatures([]) == []
 

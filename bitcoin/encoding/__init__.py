@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Re-export encoding primitives for Bitcoin binary protocols."""
 
 from bitcoin.encoding.binary import bytes_to_int, int_to_bytes, iter_bytes, read_exactly
