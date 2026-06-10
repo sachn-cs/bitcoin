@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Sighash computation for legacy, SegWit v0, and Taproot transactions.
 
 This module re-exports all sighash functions and SIGHASH flag constants

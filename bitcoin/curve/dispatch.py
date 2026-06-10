@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Backend selection and dispatch for curve operations."""
 
 from __future__ import annotations
@@ -47,6 +49,7 @@ def get_g_table() -> list[Point]:
 
 def is_generator(point: Point) -> bool:
     from bitcoin.curve.params import GENERATOR_X, GENERATOR_Y
+
     if point.infinity:
         return False
     return point.x == GENERATOR_X and point.y == GENERATOR_Y
@@ -93,6 +96,7 @@ def resolve_backend() -> CurveBackend:
         if backend is not None:
             return backend
     from bitcoin.settings import settings
+
     backend_name = settings.default_backend
     if backend_name == "libsecp":
         libsecp_backend = try_load_libsecp()
@@ -110,10 +114,13 @@ def try_load_libsecp() -> CurveBackend | None:
     """
     try:
         from bitcoin.curve.backend.libsec import LibsecpBackend  # noqa: PLC0415
+
         return LibsecpBackend()
     except ImportError:
-        logger.warning("libsecp backend requested but not available; "
-                       "falling back to NativeBackend.")
+        logger.warning(
+            "libsecp backend requested but not available; "
+            "falling back to NativeBackend."
+        )
         return None
 
 
@@ -238,12 +245,14 @@ def serialize_public_key(point: Point, compressed: bool = True) -> bytes:
 def normalize(value: int) -> int:
     """Return *value* reduced to the range ``[0, FIELD_PRIME)``."""
     from bitcoin.curve.params import FIELD_PRIME
+
     return value % FIELD_PRIME
 
 
 def normalize_non_negative(value: int, label: str = "value") -> int:
     """Thin wrapper over ``field.modular.validate_non_negative``."""
     from bitcoin.field import validate_non_negative
+
     return validate_non_negative(value, label)
 
 

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 # mypy: ignore-errors
 """Fuzz tests for binary parsers using Hypothesis."""
 

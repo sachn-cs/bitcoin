@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Miniscript descriptor compiler and analyzer.
 
 Supports a subset of the Bitcoin Miniscript language for expressing

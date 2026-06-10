@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Services — serialization, blockchain fetching, and batch operations."""
 
 from bitcoin.services.blockchain import (

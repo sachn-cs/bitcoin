@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Partially Signed Bitcoin Transaction (PSBT) types, parsing, and serialization."""
 
 from bitcoin.psbt.editor import PsbtEditor

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 # mypy: ignore-errors
 """Comprehensive tests for PSBT parser (>95% branch coverage)."""
 
@@ -51,26 +53,30 @@ def build_raw_tx(*, num_inputs: int = 0, num_outputs: int = 0) -> bytes:
             script_sig=b"",
             sequence=0xFFFFFFFF,
             witness=Witness(()),
-        ) for i in range(num_inputs))
+        )
+        for i in range(num_inputs)
+    )
     outputs = tuple(
         TxOut(value=1000 * (i + 1), script_pubkey=bytes([0x00] * 20))
-        for i in range(num_outputs))
+        for i in range(num_outputs)
+    )
     tx = Tx(version=1, inputs=inputs, outputs=outputs, lock_time=0)
     return serialize_legacy_tx(tx)
 
 
-def input_kv(key_type: int,
-             value: bytes,
-             key_data: bytes | None = None) -> bytes:
+def input_kv(key_type: int, value: bytes, key_data: bytes | None = None) -> bytes:
     kd = key_data or b""
     key_len = 1 + len(kd)
-    return (encode_varint(key_len) + bytes([key_type]) + kd +
-            encode_varint(len(value)) + value)
+    return (
+        encode_varint(key_len)
+        + bytes([key_type])
+        + kd
+        + encode_varint(len(value))
+        + value
+    )
 
 
-def output_kv(key_type: int,
-              value: bytes,
-              key_data: bytes | None = None) -> bytes:
+def output_kv(key_type: int, value: bytes, key_data: bytes | None = None) -> bytes:
     return input_kv(key_type, value, key_data)
 
 
@@ -90,7 +96,6 @@ def build_witness_stack(items: list[bytes]) -> bytes:
 
 
 class TestParsePsbt:
-
     def test_invalid_magic(self):
         with pytest.raises(ValueError, match="magic"):
             parse_psbt(b"\x00" * 10)
@@ -113,8 +118,9 @@ class TestParsePsbt:
         ikv = input_kv(PSBT_IN_NON_WITNESS_UTXO, tx_bytes)
         okv = output_kv(PSBT_OUT_REDEEM_SCRIPT, b"\xab")
         # Format: magic + global_kv + 00 + [input_kv + 00] + 00 + [output_kv + 00]
-        data = (PSBT_MAGIC + global_kv(tx_bytes) + b"\x00" + ikv + b"\x00" +
-                okv + b"\x00")
+        data = (
+            PSBT_MAGIC + global_kv(tx_bytes) + b"\x00" + ikv + b"\x00" + okv + b"\x00"
+        )
         psbt = parse_psbt(data)
         assert len(psbt.inputs) == 1
         assert len(psbt.outputs) == 1
@@ -133,8 +139,9 @@ class TestParsePsbt:
         tx_bytes = build_raw_tx(num_inputs=1, num_outputs=1)
         ikv = input_kv(0x09, b"x")
         okv = output_kv(PSBT_OUT_REDEEM_SCRIPT, b"\xff")
-        data = (PSBT_MAGIC + global_kv(tx_bytes) + b"\x00" + ikv + b"\x00" +
-                okv + b"\x00")
+        data = (
+            PSBT_MAGIC + global_kv(tx_bytes) + b"\x00" + ikv + b"\x00" + okv + b"\x00"
+        )
         psbt = parse_psbt(data)
         assert len(psbt.inputs) == 1
         assert len(psbt.outputs) == 1
@@ -147,8 +154,19 @@ class TestParsePsbt:
         ikv2 = input_kv(0x09, b"b")
         okv1 = output_kv(PSBT_OUT_REDEEM_SCRIPT, b"\xdd")
         okv2 = output_kv(PSBT_OUT_WITNESS_SCRIPT, b"\xee")
-        data = (PSBT_MAGIC + global_kv(tx_bytes) + b"\x00" + ikv1 + b"\x00" +
-                ikv2 + b"\x00" + okv1 + b"\x00" + okv2 + b"\x00")
+        data = (
+            PSBT_MAGIC
+            + global_kv(tx_bytes)
+            + b"\x00"
+            + ikv1
+            + b"\x00"
+            + ikv2
+            + b"\x00"
+            + okv1
+            + b"\x00"
+            + okv2
+            + b"\x00"
+        )
         psbt = parse_psbt(data)
         assert len(psbt.inputs) == 2
         assert len(psbt.outputs) == 2
@@ -162,8 +180,18 @@ class TestParsePsbt:
         ikv1 = input_kv(0x09, b"x")
         ikv2 = input_kv(0x09, b"y")
         okv = output_kv(PSBT_OUT_REDEEM_SCRIPT, b"\xff")
-        data = (PSBT_MAGIC + global_kv(tx_bytes) + b"\x00" + ikv1 + b"\x00" +
-                ikv2 + b"\x00" + b"\x00" + okv + b"\x00")
+        data = (
+            PSBT_MAGIC
+            + global_kv(tx_bytes)
+            + b"\x00"
+            + ikv1
+            + b"\x00"
+            + ikv2
+            + b"\x00"
+            + b"\x00"
+            + okv
+            + b"\x00"
+        )
         with pytest.raises(ValueError, match="Mismatched"):
             parse_psbt(data)
 
@@ -172,7 +200,6 @@ class TestParsePsbt:
 
 
 class TestSerializePsbt:
-
     def test_roundtrip_empty(self):
         tx_bytes = build_raw_tx()
         psbt = Psbt(tx=tx_bytes, inputs=(), outputs=())
@@ -217,8 +244,7 @@ class TestSerializePsbt:
         inp = PsbtInput(
             partial_sigs={pubkey: sig},
             bip32_derivations={
-                pubkey:
-                    b"\x01\x02\x03\x04\x02\x00\x00\x00\x00\x01\x00\x00\x00\x00"
+                pubkey: b"\x01\x02\x03\x04\x02\x00\x00\x00\x00\x01\x00\x00\x00\x00"
             },
             unknown={b"\x0f": b"custom"},
         )
@@ -241,7 +267,9 @@ class TestSerializePsbt:
     def test_roundtrip_with_final_script_witness(self):
         """Round-trip PSBT with final_script_witness set."""
         tx_bytes = build_raw_tx(num_inputs=1, num_outputs=1)
-        inp = PsbtInput(final_script_witness=(b"\x01\x02", b"\x03"),)
+        inp = PsbtInput(
+            final_script_witness=(b"\x01\x02", b"\x03"),
+        )
         psbt = Psbt(tx=tx_bytes, inputs=(inp,), outputs=(PsbtOutput(),))
         raw = serialize_psbt(psbt)
 
@@ -264,7 +292,6 @@ class TestSerializePsbt:
 
 
 class TestParsePsbtHex:
-
     def test_valid(self):
         tx_bytes = build_raw_tx()
         data = PSBT_MAGIC + global_kv(tx_bytes) + b"\x00"
@@ -280,7 +307,6 @@ class TestParsePsbtHex:
 
 
 class TestParseKeypathValue:
-
     def test_normal(self):
         fingerprint = b"\x01\x02\x03\x04"
         count = 2
@@ -310,14 +336,15 @@ class TestParseKeypathValue:
 # ── psbt_extract_signatures ────────────────────────────────────────────────
 
 VALID_PUBKEY = bytes.fromhex(
-    "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
+    "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+)
 VALID_DER = bytes.fromhex(
     "3044022079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
-    "022079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798")
+    "022079be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
+)
 
 
 class TestPsbtExtractSignatures:
-
     def __rx(self, num: int) -> bytes:
         return build_raw_tx(num_inputs=num, num_outputs=num)
 
@@ -422,10 +449,12 @@ class TestPsbtExtractSignatures:
         pubkey2 = bytes.fromhex(
             "0379be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"
         )
-        inp = PsbtInput(partial_sigs={
-            VALID_PUBKEY: sig,
-            pubkey2: sig,
-        })
+        inp = PsbtInput(
+            partial_sigs={
+                VALID_PUBKEY: sig,
+                pubkey2: sig,
+            }
+        )
         psbt = Psbt(tx=tx_bytes, inputs=(inp,), outputs=(PsbtOutput(),))
         coll = psbt_extract_signatures(psbt)
         assert len(coll) == 2
@@ -520,8 +549,7 @@ def test_parse_key_value_map_entry_with_key_data():
 
 def test_serialize_key_value_with_key_data():
     result = serialize_key_value(0x01, b"abc", [b"\x00"])
-    expected = encode_varint(2) + bytes([0x01, 0x00
-                                        ]) + encode_varint(3) + b"abc"
+    expected = encode_varint(2) + bytes([0x01, 0x00]) + encode_varint(3) + b"abc"
     assert result == expected
 
 
@@ -539,8 +567,7 @@ def test_serialize_key_value_empty_value():
 
 def test_serialize_key_value_multiple_key_data():
     result = serialize_key_value(0x01, b"v", [b"\xaa", b"\xbb"])
-    expected = (encode_varint(3) + bytes([0x01, 0xaa, 0xbb]) +
-                encode_varint(1) + b"v")
+    expected = encode_varint(3) + bytes([0x01, 0xAA, 0xBB]) + encode_varint(1) + b"v"
     assert result == expected
 
 
@@ -551,19 +578,20 @@ def test_parse_input_map_all_key_types():
     entries = bytearray()
     entries.extend(input_kv(PSBT_IN_NON_WITNESS_UTXO, b"\x00" * 10))
     entries.extend(input_kv(PSBT_IN_WITNESS_UTXO, b"\x01" * 40))
-    entries.extend(
-        input_kv(PSBT_IN_PARTIAL_SIG, b"\x05" * 10, key_data=b"\x02" * 33))
+    entries.extend(input_kv(PSBT_IN_PARTIAL_SIG, b"\x05" * 10, key_data=b"\x02" * 33))
     entries.extend(input_kv(PSBT_IN_SIGHASH_TYPE, (1).to_bytes(4, "little")))
     entries.extend(input_kv(PSBT_IN_REDEEM_SCRIPT, b"\x06" * 5))
     entries.extend(input_kv(PSBT_IN_WITNESS_SCRIPT, b"\x07" * 5))
     entries.extend(
-        input_kv(PSBT_IN_BIP32_DERIVATION, b"\x09" * 8, key_data=b"\x0a" * 33))
+        input_kv(PSBT_IN_BIP32_DERIVATION, b"\x09" * 8, key_data=b"\x0a" * 33)
+    )
     entries.extend(input_kv(PSBT_IN_FINAL_SCRIPTSIG, b"\x0b" * 3))
     entries.extend(
         input_kv(
             PSBT_IN_FINAL_SCRIPTWITNESS,
             build_witness_stack([b"\x0c", b"\x0d\x0e"]),
-        ))
+        )
+    )
     entries.extend(input_kv(0x09, b"\x0f"))
     entries.append(0x00)
 
@@ -591,8 +619,8 @@ def test_parse_input_map_empty():
 
 def test_parse_input_map_unknown_keys():
     entries = bytearray()
-    entries.extend(input_kv(0x0a, b"v1"))
-    entries.extend(input_kv(0x0b, b"v2", key_data=b"\x01"))
+    entries.extend(input_kv(0x0A, b"v1"))
+    entries.extend(input_kv(0x0B, b"v2", key_data=b"\x01"))
     entries.append(0x00)
     inp, offset = parse_input_map(bytes(entries), 0)
     assert inp.unknown == {b"\x0a": b"v1", b"\x0b\x01": b"v2"}
@@ -654,8 +682,8 @@ def test_parse_output_map_all_key_types():
     entries.extend(output_kv(PSBT_OUT_REDEEM_SCRIPT, b"\x01"))
     entries.extend(output_kv(PSBT_OUT_WITNESS_SCRIPT, b"\x02"))
     entries.extend(
-        output_kv(PSBT_OUT_BIP32_DERIVATION, b"\x04" * 8,
-                  key_data=b"\x05" * 33))
+        output_kv(PSBT_OUT_BIP32_DERIVATION, b"\x04" * 8, key_data=b"\x05" * 33)
+    )
     entries.extend(output_kv(0x03, b"\x06"))
     entries.append(0x00)
 
@@ -713,8 +741,9 @@ def test_parse_witness_stack_single_item():
 
 
 def test_parse_witness_stack_multiple_items():
-    data = (encode_varint(1) + b"a" + encode_varint(2) + b"bc" +
-            encode_varint(3) + b"def")
+    data = (
+        encode_varint(1) + b"a" + encode_varint(2) + b"bc" + encode_varint(3) + b"def"
+    )
     result = parse_witness_stack(data)
     assert result == (b"a", b"bc", b"def")
 

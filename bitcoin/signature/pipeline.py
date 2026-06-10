@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Batch extraction pipeline for multiple transactions.
 
 Supports parallel processing via ``concurrent.futures.ThreadPoolExecutor``,
@@ -40,8 +42,9 @@ def handle_shutdown(signum: int, frame: object) -> None:
     global shutdown_requested
     with shutdown_lock:
         shutdown_requested = True
-    logger.warning("Shutdown requested (signal %d). Completing current "
-                   "tasks...", signum)
+    logger.warning(
+        "Shutdown requested (signal %d). Completing current tasks...", signum
+    )
 
 
 def is_shutdown_requested() -> bool:
@@ -127,7 +130,8 @@ def process_single(
         utxo_values=list(utxo_values) if utxo_values is not None else None,
     )
     if not records and any(
-            txin.previous_output.txid != b"\x00" * 32 for txin in tx.inputs):
+        txin.previous_output.txid != b"\x00" * 32 for txin in tx.inputs
+    ):
         raise ValueError("No signatures found in transaction")
     return records
 
@@ -174,8 +178,12 @@ def batch_extract(
     install_shutdown_handlers()
 
     rid = request_id or generate_request_id()
-    logger.info("[%s] Starting batch extract: %d transactions, "
-                "%d workers", rid, len(transactions), max_workers)
+    logger.info(
+        "[%s] Starting batch extract: %d transactions, %d workers",
+        rid,
+        len(transactions),
+        max_workers,
+    )
 
     n = len(transactions)
     scripts = utxo_scripts or [None] * n
@@ -184,7 +192,8 @@ def batch_extract(
     if len(scripts) != n or len(values) != n:
         raise ValueError(
             f"utxo_scripts ({len(scripts)}) and utxo_values ({len(values)}) "
-            f"must match transactions ({n}).")
+            f"must match transactions ({n})."
+        )
 
     all_records: list[Record] = []
     errors: list[tuple[str, str]] = []
@@ -204,18 +213,15 @@ def batch_extract(
             return process_single(tx_input, tx_scripts, tx_values)
         except Exception as exc:
             label = tx_input[:64] if isinstance(tx_input, str) else "<bytes>"
-            logger.warning("[%s] Failed to process %s: %s",
-                           rid,
-                           label,
-                           exc,
-                           exc_info=True)
+            logger.warning(
+                "[%s] Failed to process %s: %s", rid, label, exc, exc_info=True
+            )
             return (label, str(exc))
 
     if max_workers <= 1:
-        for tx_input, tx_scripts, tx_values in zip(transactions,
-                                                   scripts,
-                                                   values,
-                                                   strict=True):
+        for tx_input, tx_scripts, tx_values in zip(
+            transactions, scripts, values, strict=True
+        ):
             if is_shutdown_requested():
                 logger.warning("[%s] Shutdown detected, aborting batch.", rid)
                 break
@@ -228,13 +234,13 @@ def batch_extract(
     elif use_process_pool:
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             future_map = {}
-            for tx_input, tx_scripts, tx_values in zip(transactions,
-                                                       scripts,
-                                                       values,
-                                                       strict=True):
-                label = (tx_input[:64] if isinstance(tx_input, str) else "<bytes>")
-                fut = executor.submit(_process_single_worker, tx_input,
-                                      tx_scripts, tx_values)
+            for tx_input, tx_scripts, tx_values in zip(
+                transactions, scripts, values, strict=True
+            ):
+                label = tx_input[:64] if isinstance(tx_input, str) else "<bytes>"
+                fut = executor.submit(
+                    _process_single_worker, tx_input, tx_scripts, tx_values
+                )
                 future_map[fut] = label
 
             for future in as_completed(future_map):
@@ -242,12 +248,13 @@ def batch_extract(
                 try:
                     fut_result = future.result()
                 except Exception as exc:
-                    logger.warning("[%s] Unexpected worker exception for "
-                                   "%s: %s",
-                                   rid,
-                                   label,
-                                   exc,
-                                   exc_info=True)
+                    logger.warning(
+                        "[%s] Unexpected worker exception for %s: %s",
+                        rid,
+                        label,
+                        exc,
+                        exc_info=True,
+                    )
                     with lock:
                         errors.append((label, str(exc)))
                     continue
@@ -261,18 +268,18 @@ def batch_extract(
     else:
         with ThreadPoolExecutor(max_workers=max_workers) as executor:  # type: ignore[assignment]
             future_map = {}
-            for tx_input, tx_scripts, tx_values in zip(transactions,
-                                                       scripts,
-                                                       values,
-                                                       strict=True):
+            for tx_input, tx_scripts, tx_values in zip(
+                transactions, scripts, values, strict=True
+            ):
                 if is_shutdown_requested():
                     logger.warning(
-                        "[%s] Shutdown detected, skipping "
-                        "remaining submissions.", rid)
+                        "[%s] Shutdown detected, skipping remaining submissions.", rid
+                    )
                     break
-                label = (tx_input[:64] if isinstance(tx_input, str) else "<bytes>")
-                fut = executor.submit(process_one_with_shutdown, tx_input, tx_scripts,
-                                      tx_values)
+                label = tx_input[:64] if isinstance(tx_input, str) else "<bytes>"
+                fut = executor.submit(
+                    process_one_with_shutdown, tx_input, tx_scripts, tx_values
+                )
                 future_map[fut] = label
 
             for future in as_completed(future_map):
@@ -280,12 +287,13 @@ def batch_extract(
                 try:
                     fut_result = future.result()
                 except Exception as exc:
-                    logger.warning("[%s] Unexpected worker exception for "
-                                   "%s: %s",
-                                   rid,
-                                   label,
-                                   exc,
-                                   exc_info=True)
+                    logger.warning(
+                        "[%s] Unexpected worker exception for %s: %s",
+                        rid,
+                        label,
+                        exc,
+                        exc_info=True,
+                    )
                     with lock:
                         errors.append((label, str(exc)))
                     continue
@@ -304,9 +312,13 @@ def batch_extract(
         successful=successful,
         failed=n - successful,
     )
-    logger.info("[%s] Batch complete: %d / %d successful, %d errors.", rid,
-                batch_result.successful, batch_result.total_transactions,
-                len(batch_result.errors))
+    logger.info(
+        "[%s] Batch complete: %d / %d successful, %d errors.",
+        rid,
+        batch_result.successful,
+        batch_result.total_transactions,
+        len(batch_result.errors),
+    )
     return batch_result
 
 
@@ -402,7 +414,8 @@ def extract_r_from_record(record: Record) -> int | None:
 
 
 def correlate_across_transactions(
-    records: list[Record],) -> dict[str, list[NonceReuseGroup]]:
+    records: list[Record],
+) -> dict[str, list[NonceReuseGroup]]:
     """Detect nonce reuse across multiple transactions.
 
     Groups records by *script_type*, then within each group groups

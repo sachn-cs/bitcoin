@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Modular arithmetic over finite fields: inversion and validation."""
 
 from bitcoin.exceptions import NotInvertible

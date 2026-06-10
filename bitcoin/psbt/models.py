@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Frozen dataclass models for PSBT (BIP-174) structures."""
 
 from __future__ import annotations
@@ -46,6 +48,7 @@ class PsbtInput:
             The serialized input map bytes.
         """
         from bitcoin.psbt.parser import serialize_input_map
+
         return serialize_input_map(self)
 
 
@@ -74,6 +77,7 @@ class PsbtOutput:
             The serialized output map bytes.
         """
         from bitcoin.psbt.parser import serialize_output_map
+
         return serialize_output_map(self)
 
 
@@ -102,7 +106,8 @@ class Psbt:
         if len(self.inputs) != len(self.outputs):
             raise ValueError(
                 f"Mismatched input/output count in PSBT: "
-                f"{len(self.inputs)} inputs vs {len(self.outputs)} outputs.")
+                f"{len(self.inputs)} inputs vs {len(self.outputs)} outputs."
+            )
 
     def serialize(self) -> bytes:
         """Serialize this PSBT to its binary wire format (BIP-174).
@@ -111,6 +116,7 @@ class Psbt:
             The serialized PSBT bytes.
         """
         from bitcoin.psbt.parser import serialize_psbt
+
         return serialize_psbt(self)
 
     def extract_signatures(
@@ -127,4 +133,5 @@ class Psbt:
             A ``SignatureCollection`` containing all extracted records.
         """
         from bitcoin.psbt.parser import psbt_extract_signatures
+
         return psbt_extract_signatures(self, input_values=input_values)

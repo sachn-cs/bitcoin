@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Application-wide settings singleton for the bitcoin package."""
 
 from __future__ import annotations
@@ -69,9 +71,11 @@ class Settings:
 
     def __repr__(self) -> str:
         with self.__lock:
-            return (f"Settings(strict_mode={self.__strict_mode}, "
-                    f"default_backend={self.__default_backend!r}, "
-                    f"max_extraction_inputs={self.__max_extraction_inputs})")
+            return (
+                f"Settings(strict_mode={self.__strict_mode}, "
+                f"default_backend={self.__default_backend!r}, "
+                f"max_extraction_inputs={self.__max_extraction_inputs})"
+            )
 
 
 settings = Settings()

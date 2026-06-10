@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """The ``Point`` value type — a point on the secp256k1 curve.
 
 Domain-driven composed engine exposed via ``Point.arithmetic`` for
@@ -31,6 +33,7 @@ class PointArithmetic:
             The negated Point, or the point at infinity unchanged.
         """
         from bitcoin.curve.operations import negate
+
         return negate(self.__point)
 
     def add(self, other: Point) -> Point:
@@ -43,6 +46,7 @@ class PointArithmetic:
             The sum Point.
         """
         from bitcoin.curve.operations import add
+
         return add(self.__point, other)
 
     def double(self) -> Point:
@@ -52,6 +56,7 @@ class PointArithmetic:
             The doubled Point.
         """
         from bitcoin.curve.operations import double
+
         return double(self.__point)
 
     def multiply(self, scalar: int) -> Point:
@@ -67,6 +72,7 @@ class PointArithmetic:
             ValueError: If *scalar* is negative.
         """
         from bitcoin.curve.operations import multiply
+
         return multiply(scalar, self.__point)
 
     def is_on_curve(self) -> bool:
@@ -77,6 +83,7 @@ class PointArithmetic:
             is always considered on the curve.
         """
         from bitcoin.curve.operations import is_on_curve
+
         return is_on_curve(self.__point)
 
     def serialize(self, compressed: bool = True) -> bytes:
@@ -105,11 +112,9 @@ class Point:
 
     __slots__ = ("__x", "__y", "__infinity")
 
-    def __init__(self,
-                 x: int | None = None,
-                 y: int | None = None,
-                 *,
-                 infinity: bool = False) -> None:
+    def __init__(
+        self, x: int | None = None, y: int | None = None, *, infinity: bool = False
+    ) -> None:
         """Initialize a Point on the secp256k1 curve.
 
         Args:

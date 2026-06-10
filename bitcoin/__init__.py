@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """bitcoin: A pure-Python ECDSA signing, extraction, and analysis library.
 
 Re-exports the primary public API: curve operations, encoding utilities,

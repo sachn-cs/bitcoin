@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Deserialise Bitcoin transactions from wire format.
 
 Supports both legacy and SegWit (BIP-144) encoded transactions.
@@ -35,11 +37,12 @@ def parse_tx(data: bytes, offset: int = 0) -> tuple[Tx, int]:
     """
     if len(data) > MAX_TX_SIZE:
         raise ParsingError(
-            f"Transaction size {len(data)} exceeds maximum {MAX_TX_SIZE}")
-    version = int.from_bytes(data[offset:offset + 4], "little")
+            f"Transaction size {len(data)} exceeds maximum {MAX_TX_SIZE}"
+        )
+    version = int.from_bytes(data[offset : offset + 4], "little")
     offset += 4
 
-    is_segwit = data[offset:offset + 2] == b"\x00\x01"
+    is_segwit = data[offset : offset + 2] == b"\x00\x01"
     if is_segwit:
         offset += 2
 
@@ -55,13 +58,15 @@ def parse_tx(data: bytes, offset: int = 0) -> tuple[Tx, int]:
                 witness=witness,
             )
 
-    lock_time = int.from_bytes(data[offset:offset + 4], "little")
+    lock_time = int.from_bytes(data[offset : offset + 4], "little")
     offset += 4
 
-    return Tx(version=version,
-              inputs=tuple(inputs_list),
-              outputs=tuple(outputs),
-              lock_time=lock_time), offset
+    return Tx(
+        version=version,
+        inputs=tuple(inputs_list),
+        outputs=tuple(outputs),
+        lock_time=lock_time,
+    ), offset
 
 
 def parse_inputs(data: bytes, offset: int) -> tuple[list[TxIn], int]:
@@ -83,14 +88,14 @@ def parse_inputs(data: bytes, offset: int) -> tuple[list[TxIn], int]:
         raise ParsingError(f"Input count {n} exceeds maximum {MAX_INPUTS}")
     inputs: list[TxIn] = []
     for _ in range(n):
-        txid = data[offset:offset + 32]
+        txid = data[offset : offset + 32]
         offset += 32
-        vout = int.from_bytes(data[offset:offset + 4], "little")
+        vout = int.from_bytes(data[offset : offset + 4], "little")
         offset += 4
         script_len, offset = decode_varint(data, offset)
-        script_sig = data[offset:offset + script_len]
+        script_sig = data[offset : offset + script_len]
         offset += script_len
-        sequence = int.from_bytes(data[offset:offset + 4], "little")
+        sequence = int.from_bytes(data[offset : offset + 4], "little")
         offset += 4
         inputs.append(
             TxIn(
@@ -98,7 +103,8 @@ def parse_inputs(data: bytes, offset: int) -> tuple[list[TxIn], int]:
                 script_sig=script_sig,
                 sequence=sequence,
                 witness=Witness(()),
-            ))
+            )
+        )
     return inputs, offset
 
 
@@ -120,10 +126,10 @@ def parse_outputs(data: bytes, offset: int) -> tuple[list[TxOut], int]:
         raise ParsingError(f"Output count {n} exceeds maximum {MAX_OUTPUTS}")
     outputs: list[TxOut] = []
     for _ in range(n):
-        value = int.from_bytes(data[offset:offset + 8], "little")
+        value = int.from_bytes(data[offset : offset + 8], "little")
         offset += 8
         script_len, offset = decode_varint(data, offset)
-        script_pubkey = data[offset:offset + script_len]
+        script_pubkey = data[offset : offset + script_len]
         offset += script_len
         outputs.append(TxOut(value=value, script_pubkey=script_pubkey))
     return outputs, offset
@@ -145,14 +151,16 @@ def parse_witness(data: bytes, offset: int) -> tuple[Witness, int]:
     n, offset = decode_varint(data, offset)
     if n > MAX_WITNESS_ITEMS:
         raise ParsingError(
-            f"Witness item count {n} exceeds maximum {MAX_WITNESS_ITEMS}")
+            f"Witness item count {n} exceeds maximum {MAX_WITNESS_ITEMS}"
+        )
     items: list[bytes] = []
     for _ in range(n):
         item_len, offset = decode_varint(data, offset)
         if item_len > MAX_WITNESS_ITEM_SIZE:
-            raise ParsingError(f"Witness item size {item_len} exceeds maximum "
-                               f"{MAX_WITNESS_ITEM_SIZE}")
-        item = data[offset:offset + item_len]
+            raise ParsingError(
+                f"Witness item size {item_len} exceeds maximum {MAX_WITNESS_ITEM_SIZE}"
+            )
+        item = data[offset : offset + item_len]
         offset += item_len
         items.append(item)
     return Witness(tuple(items)), offset

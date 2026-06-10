@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Engine for canonical sorting of extracted signature records."""
 
 from __future__ import annotations

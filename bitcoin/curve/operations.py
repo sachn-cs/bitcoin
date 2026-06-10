@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Pure-Python secp256k1 point arithmetic."""
 
 from __future__ import annotations
@@ -68,8 +70,9 @@ def double(point: Point) -> Point:
     x1, y1 = point.x, point.y
     if x1 is None or y1 is None:
         return Point(infinity=True)
-    slope = ((3 * x1 * x1 + CURVE_A) * inverse(
-        (2 * y1) % FIELD_PRIME, FIELD_PRIME)) % FIELD_PRIME
+    slope = (
+        (3 * x1 * x1 + CURVE_A) * inverse((2 * y1) % FIELD_PRIME, FIELD_PRIME)
+    ) % FIELD_PRIME
     x3 = (slope * slope - 2 * x1) % FIELD_PRIME
     y3 = (slope * (x1 - x3) - y1) % FIELD_PRIME
     return Point(x=x3, y=y3)

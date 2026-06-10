@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Miniscript descriptor expression compiler.
 
 Parses descriptor expression strings (e.g. ``"pk(A)"``, ``"or(pk(A),pk(B))"``)
@@ -18,24 +20,25 @@ class DescriptorError(Exception):
 
 class DescriptorNode(NamedTuple):
     """A node in the parsed descriptor AST."""
+
     op: str
     args: list[str | DescriptorNode]
 
 
 COMPILER: dict[str, tuple[str, int]] = {
-    "pk":       ("<pubkey> OP_CHECKSIG", 1),              # pk(key)
-    "pkh":      ("OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG", 1),
-    "wpkh":     ("<hash160> OP_EQUAL", 1),                # wpkh(key) – script part
-    "or":       ("[IF <a> ELSE <b> ENDIF]", 2),           # or(a,b)
-    "and":      ("<a> OP_SWAP <b> OP_BOOLAND", 2),        # and(a,b)
-    "and_v":    ("<a> <b>", 2),                           # and_v(a,b) – v: verify
-    "or_b":     ("[IF <a> NOTIF <b> ENDIF]", 2),          # or_b(a,b)
-    "sha256":   ("<hash> OP_SHA256 OP_EQUAL", 1),         # sha256(h)
-    "hash256":  ("<hash> OP_HASH256 OP_EQUAL", 1),        # hash256(h)
-    "ripemd160":("<hash> OP_RIPEMD160 OP_EQUAL", 1),      # ripemd160(h)
-    "hash160":  ("<hash> OP_HASH160 OP_EQUAL", 1),        # hash160(h)
-    "older":    ("<n> OP_CHECKSEQUENCEVERIFY", 1),        # older(n)
-    "after":    ("<n> OP_CHECKLOCKTIMEVERIFY", 1),        # after(n)
+    "pk": ("<pubkey> OP_CHECKSIG", 1),  # pk(key)
+    "pkh": ("OP_DUP OP_HASH160 <hash160> OP_EQUALVERIFY OP_CHECKSIG", 1),
+    "wpkh": ("<hash160> OP_EQUAL", 1),  # wpkh(key) – script part
+    "or": ("[IF <a> ELSE <b> ENDIF]", 2),  # or(a,b)
+    "and": ("<a> OP_SWAP <b> OP_BOOLAND", 2),  # and(a,b)
+    "and_v": ("<a> <b>", 2),  # and_v(a,b) – v: verify
+    "or_b": ("[IF <a> NOTIF <b> ENDIF]", 2),  # or_b(a,b)
+    "sha256": ("<hash> OP_SHA256 OP_EQUAL", 1),  # sha256(h)
+    "hash256": ("<hash> OP_HASH256 OP_EQUAL", 1),  # hash256(h)
+    "ripemd160": ("<hash> OP_RIPEMD160 OP_EQUAL", 1),  # ripemd160(h)
+    "hash160": ("<hash> OP_HASH160 OP_EQUAL", 1),  # hash160(h)
+    "older": ("<n> OP_CHECKSEQUENCEVERIFY", 1),  # older(n)
+    "after": ("<n> OP_CHECKLOCKTIMEVERIFY", 1),  # after(n)
 }
 
 
@@ -75,8 +78,7 @@ def parse_descriptor(expr: str) -> DescriptorNode:
     _, arity = COMPILER[op]
     args = _split_args(inner)
     if len(args) != arity:
-        raise DescriptorError(
-            f"{op} expects {arity} argument(s), got {len(args)}.")
+        raise DescriptorError(f"{op} expects {arity} argument(s), got {len(args)}.")
 
     parsed_args: list[str | DescriptorNode] = []
     for arg in args:
@@ -149,7 +151,8 @@ def _emit_script(node: DescriptorNode) -> str:
                 arg_script = arg
             if f"<{['a', 'b', 'c', 'd', 'e'][i]}>" in substituted:
                 substituted = substituted.replace(
-                    f"<{['a', 'b', 'c', 'd', 'e'][i]}>", arg_script, 1)
+                    f"<{['a', 'b', 'c', 'd', 'e'][i]}>", arg_script, 1
+                )
             else:
                 substituted = substituted.replace(f"<{pname}>", arg_script, 1)
 

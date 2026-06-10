@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Stateful (rule-based) tests for the extraction pipeline."""
 
 from __future__ import annotations
@@ -37,7 +39,7 @@ class ExtractionPipeline(stateful.RuleBasedStateMachine):
             scripts = list(scripts) + [
                 b"" for _ in range(len(self.tx.inputs) - len(scripts))
             ]
-        self.utxo_scripts = scripts[:len(self.tx.inputs)]
+        self.utxo_scripts = scripts[: len(self.tx.inputs)]
 
     @stateful.rule()
     def extract(self) -> None:
@@ -65,6 +67,7 @@ class ExtractionPipeline(stateful.RuleBasedStateMachine):
         if not self.records:
             return
         from bitcoin.signature.linearization import linearize_signatures
+
         flat = linearize_signatures(self.records)
         assert len(flat) == len(self.records)
         for rec in flat:

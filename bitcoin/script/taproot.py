@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Taproot script-path support for parsing and extracting script spends.
 
 Provides structured parsing of Taproot witness stacks and helpers for
@@ -30,7 +32,8 @@ class TaprootScriptPath:
 
 
 def parse_taproot_witness_stack(
-    witness_items: tuple[bytes, ...],) -> list[TaprootScriptPath] | None:
+    witness_items: tuple[bytes, ...],
+) -> list[TaprootScriptPath] | None:
     """Parse a Taproot witness stack into script path spends.
 
     The last witness item is the control block.  The second-to-last item
@@ -104,8 +107,10 @@ def get_x_only_pubkey(script_pubkey: bytes) -> bytes | None:
         The 32-byte x-only public key, or ``None`` if the script does
         not match the P2TR format.
     """
-    if (len(script_pubkey) == P2TR_SCRIPT_LENGTH and
-            script_pubkey[0] == P2TR_OP_1_BYTE and
-            script_pubkey[1] == P2TR_PUSH_32_BYTE):
+    if (
+        len(script_pubkey) == P2TR_SCRIPT_LENGTH
+        and script_pubkey[0] == P2TR_OP_1_BYTE
+        and script_pubkey[1] == P2TR_PUSH_32_BYTE
+    ):
         return script_pubkey[2:P2TR_SCRIPT_LENGTH]
     return None

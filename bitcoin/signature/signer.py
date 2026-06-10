@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """ECDSA signing utilities.
 
 Provides ``sign`` for creating DER-encoded signatures from a message
@@ -33,9 +35,9 @@ def bits2int(data: bytes) -> int:
     return int.from_bytes(data, "big") >> (len(data) * 8 - CURVE_ORDER.bit_length())
 
 
-def hmac_drbg_generate_k(private_key_bytes: bytes,
-                         message_hash: bytes,
-                         q: int = CURVE_ORDER) -> int:
+def hmac_drbg_generate_k(
+    private_key_bytes: bytes, message_hash: bytes, q: int = CURVE_ORDER
+) -> int:
     """Generate a deterministic nonce *k* via RFC 6979 HMAC-DRBG.
 
     Args:
@@ -71,8 +73,10 @@ def hmac_drbg_generate_k(private_key_bytes: bytes,
         K = hmac.new(K, V + b"\x00", "sha256").digest()
         V = hmac.new(K, V, "sha256").digest()
 
-    raise RuntimeError(f"HMAC-DRBG failed to generate a valid k after "
-                       f"{HMAC_DRBG_MAX_RETRIES} attempts.")
+    raise RuntimeError(
+        f"HMAC-DRBG failed to generate a valid k after "
+        f"{HMAC_DRBG_MAX_RETRIES} attempts."
+    )
 
 
 def sign(message_hash: bytes, private_key: int) -> bytes:
@@ -93,8 +97,9 @@ def sign(message_hash: bytes, private_key: int) -> bytes:
             computation fails.
     """
     if len(message_hash) != HASH_BYTE_LENGTH:
-        raise ValueError(f"Message hash must be {HASH_BYTE_LENGTH} bytes, "
-                         f"got {len(message_hash)}.")
+        raise ValueError(
+            f"Message hash must be {HASH_BYTE_LENGTH} bytes, got {len(message_hash)}."
+        )
 
     z = int.from_bytes(message_hash, "big") % CURVE_ORDER
     d = private_key
@@ -156,7 +161,8 @@ def sign_tx_input(
     Returns:
         Signature bytes (DER-encoded signature + sighash flag byte).
     """
-    message_hash = compute_sighash(transaction, input_index, script, sighash_flag,
-                                   value)
+    message_hash = compute_sighash(
+        transaction, input_index, script, sighash_flag, value
+    )
     der_signature = sign(message_hash, private_key)
     return der_signature + bytes([sighash_flag])

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Script building helpers."""
 
 from __future__ import annotations
@@ -42,7 +44,8 @@ def build_p2pkh(hash160_bytes: bytes) -> bytes:
     if len(hash160_bytes) != 20:
         raise ValueError("P2PKH requires a 20-byte hash.")
     return serialize_script(
-        [OP_DUP, OP_HASH160, hash160_bytes, OP_EQUALVERIFY, OP_CHECKSIG])
+        [OP_DUP, OP_HASH160, hash160_bytes, OP_EQUALVERIFY, OP_CHECKSIG]
+    )
 
 
 def build_p2wpkh(hash160_bytes: bytes) -> bytes:

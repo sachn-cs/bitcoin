@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Sequential ECDSA signature verification for multiple signatures.
 
 Verifies each signature individually for correctness.  This gives the
@@ -34,8 +36,10 @@ def verify_all(
     """
     n = len(message_hashes)
     if len(der_signatures) != n or len(public_keys) != n:
-        raise ValueError(f"Length mismatch: {len(message_hashes)} messages, "
-                         f"{len(der_signatures)} signatures, {len(public_keys)} keys.")
+        raise ValueError(
+            f"Length mismatch: {len(message_hashes)} messages, "
+            f"{len(der_signatures)} signatures, {len(public_keys)} keys."
+        )
 
     zipped = zip(message_hashes, der_signatures, public_keys, strict=True)
     return all(verify_sig(m, s, pk) for m, s, pk in zipped)

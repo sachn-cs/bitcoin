@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Library health check and capability introspection."""
 
 from __future__ import annotations

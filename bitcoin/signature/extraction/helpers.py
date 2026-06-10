@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Shared helpers for signature extraction: pubkey recovery, sighash, script code."""
 
 from __future__ import annotations
@@ -111,7 +113,7 @@ def compute_sighash(tx: Tx, vin: int, script: bytes, flag: int, value: int) -> b
     from bitcoin.sighash.legacy import sighash_legacy
     from bitcoin.sighash.segwit import sighash_segwit
 
-    is_witness = (len(script) >= 2 and script[0] == 0x00 and script[1] in (0x14, 0x20))
+    is_witness = len(script) >= 2 and script[0] == 0x00 and script[1] in (0x14, 0x20)
     if is_witness:
         return sighash_segwit(tx, vin, script, value, flag)
     return sighash_legacy(tx, vin, script, flag)
@@ -152,15 +154,17 @@ def build_p2pkh_script_code(pubkey_hash: bytes) -> bytes:
     """
     if len(pubkey_hash) != 20:
         raise ValueError(f"pubkey_hash must be 20 bytes, got {len(pubkey_hash)}")
-    return b"".join([
-        bytes([0x19]),
-        bytes([0x76]),
-        bytes([0xA9]),
-        bytes([0x14]),
-        pubkey_hash,
-        bytes([0x88]),
-        bytes([0xAC]),
-    ])
+    return b"".join(
+        [
+            bytes([0x19]),
+            bytes([0x76]),
+            bytes([0xA9]),
+            bytes([0x14]),
+            pubkey_hash,
+            bytes([0x88]),
+            bytes([0xAC]),
+        ]
+    )
 
 
 def default_script_code() -> bytes:

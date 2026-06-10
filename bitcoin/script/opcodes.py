@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Bitcoin script opcode constants and lookup dictionaries.
 
 Provides all named OP_* constants used in Bitcoin Script, along with

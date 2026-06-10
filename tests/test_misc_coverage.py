@@ -1,4 +1,7 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Tests covering remaining uncovered branches in models, records, collections."""
+
 from __future__ import annotations
 
 import pytest
@@ -18,7 +21,6 @@ from bitcoin.transaction.models import (
 
 
 class TestRecordCoverage:
-
     def test_empty_sig(self) -> None:
         with pytest.raises(ValueError, match="signature must be non-empty"):
             Record(
@@ -57,7 +59,6 @@ class TestRecordCoverage:
 
 
 class TestCollectionCoverage:
-
     def test_iter(self) -> None:
         rec = Record(
             txid=b"\x00" * 32,
@@ -143,7 +144,6 @@ class TestCollectionCoverage:
 
 
 class TestCoefficientsCoverage:
-
     def test_alpha_beta_properties(self) -> None:
         rec = derive_linear_coefficients(7, 11, 42, input_index=5)
         col = LinearCoefficientCollection(records=(rec,))
@@ -164,7 +164,6 @@ class TestCoefficientsCoverage:
 
 
 class TestWtxidCoverage:
-
     def test_wtxid(self) -> None:
         txin = TxIn(
             previous_output=OutPoint(txid=b"\x00" * 32, vout=0),

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Re-export finite-field arithmetic helpers for secp256k1."""
 
 from bitcoin.field.modular import inverse, validate_non_negative

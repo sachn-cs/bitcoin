@@ -1,4 +1,7 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Tests for the health module."""
+
 from __future__ import annotations
 
 from unittest.mock import patch
@@ -7,7 +10,6 @@ from bitcoin.health import check_backend, check_imports, health
 
 
 class TestHealth:
-
     def test_health_returns_dict(self) -> None:
         result = health()
         assert isinstance(result, dict)
@@ -42,7 +44,6 @@ class TestHealth:
 
 
 class TestCheckBackend:
-
     def test_returns_dict(self) -> None:
         result = check_backend()
         assert isinstance(result, dict)
@@ -60,22 +61,25 @@ class TestCheckBackend:
         assert "available" in entry
 
     def test_native_backend_failure(self) -> None:
-        with patch("bitcoin.curve.backend.native.NativeBackend",
-                   side_effect=RuntimeError("fail")):
+        with patch(
+            "bitcoin.curve.backend.native.NativeBackend",
+            side_effect=RuntimeError("fail"),
+        ):
             result = check_backend()
             assert not result["native"]["available"]
             assert "fail" in result["native"]["error"]
 
     def test_libsecp_backend_failure(self) -> None:
-        with patch("bitcoin.curve.backend.libsec.LibsecpBackend",
-                   side_effect=RuntimeError("fail")):
+        with patch(
+            "bitcoin.curve.backend.libsec.LibsecpBackend",
+            side_effect=RuntimeError("fail"),
+        ):
             result = check_backend()
             assert not result["libsecp256k1"]["available"]
             assert "fail" in result["libsecp256k1"]["error"]
 
 
 class TestCheckImports:
-
     def test_returns_dict_of_bools(self) -> None:
         result = check_imports()
         assert isinstance(result, dict)
@@ -103,8 +107,10 @@ class TestCheckImports:
             assert mod in result
 
     def test_import_failure(self) -> None:
-        with patch("bitcoin.health.importlib.import_module",
-                   side_effect=ImportError("no such module")):
+        with patch(
+            "bitcoin.health.importlib.import_module",
+            side_effect=ImportError("no such module"),
+        ):
             result = check_imports()
             for mod, ok in result.items():
                 assert not ok

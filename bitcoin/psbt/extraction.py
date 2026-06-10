@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """PSBT signature extraction utilities."""
 
 from __future__ import annotations
@@ -69,11 +71,13 @@ def psbt_extract_signatures(
                     script_type="psbt_partial",
                     sighash_flag=flag,
                     amount=value,
-                ))
+                )
+            )
 
         if inp.final_script_sig:
             try:
                 from bitcoin.script.parser import parse_script
+
                 parsed = parse_script(inp.final_script_sig)
                 for element in parsed:
                     if isinstance(element, bytes) and len(element) > 1:
@@ -92,7 +96,8 @@ def psbt_extract_signatures(
                                 script_type="finalized",
                                 sighash_flag=flag,
                                 amount=value,
-                            ))
+                            )
+                        )
             except (ValueError, IndexError):
                 logger.debug("Failed to parse finalized scriptSig for input %d", vin)
 
@@ -112,6 +117,7 @@ def extract_pubkey_from_elements(elements: Sequence[object]) -> Point | None:
         The public key ``Point``, or ``None`` if no valid pubkey found.
     """
     from bitcoin.curve import parse_public_key
+
     for element in reversed(tuple(elements)):
         if isinstance(element, bytes) and len(element) in (33, 65):
             try:

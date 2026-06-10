@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Replace-By-Fee (RBF) detection for Bitcoin transactions.
 
 Provides utilities to detect opt-in RBF (BIP-125) and extract

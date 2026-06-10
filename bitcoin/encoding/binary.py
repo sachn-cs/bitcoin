@@ -1,4 +1,7 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Binary serialization helpers for byte-level encoding and decoding."""
+
 from __future__ import annotations
 
 from collections.abc import Iterator
@@ -18,9 +21,9 @@ def bytes_to_int(data: bytes, byteorder: Literal["big", "little"] = "big") -> in
     return int.from_bytes(data, byteorder)
 
 
-def int_to_bytes(value: int,
-                 length: int,
-                 byteorder: Literal["big", "little"] = "big") -> bytes:
+def int_to_bytes(
+    value: int, length: int, byteorder: Literal["big", "little"] = "big"
+) -> bytes:
     """Convert an integer to a fixed-length byte string.
 
     Args:
@@ -51,9 +54,11 @@ def read_exactly(stream: bytes, n: int, offset: int = 0) -> tuple[bytes, int]:
             at *offset*.
     """
     if offset + n > len(stream):
-        raise ValueError(f"Requested {n} bytes at offset {offset} but stream only "
-                         f"has {len(stream)} bytes.")
-    return stream[offset:offset + n], offset + n
+        raise ValueError(
+            f"Requested {n} bytes at offset {offset} but stream only "
+            f"has {len(stream)} bytes."
+        )
+    return stream[offset : offset + n], offset + n
 
 
 def iter_bytes(data: bytes, chunk_size: int) -> Iterator[bytes]:
@@ -68,4 +73,4 @@ def iter_bytes(data: bytes, chunk_size: int) -> Iterator[bytes]:
         *chunk_size* bytes long. The last slice may be shorter.
     """
     for i in range(0, len(data), chunk_size):
-        yield data[i:i + chunk_size]
+        yield data[i : i + chunk_size]

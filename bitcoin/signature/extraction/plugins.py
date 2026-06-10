@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Lightweight plugin registry for custom script-path extractors."""
 
 from __future__ import annotations
@@ -18,8 +20,9 @@ class ExtractorPlugin(Protocol):
         """Return True if this plugin handles the given script type."""
         ...
 
-    def extract(self, tx: Tx, vin: int, txin: TxIn, script_pubkey: bytes,
-                value: int) -> list[Record]:
+    def extract(
+        self, tx: Tx, vin: int, txin: TxIn, script_pubkey: bytes, value: int
+    ) -> list[Record]:
         """Extract signatures from this input."""
         ...
 

@@ -1,4 +1,7 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Tests for PSBT parsing."""
+
 from __future__ import annotations
 
 import pytest
@@ -11,7 +14,6 @@ from bitcoin.transaction import Tx
 
 
 class TestPsbt:
-
     def test_minimal_psbt(self) -> None:
         """Create and serialize a minimal PSBT, then parse it back."""
         tx = Tx(version=1, inputs=(), outputs=(), lock_time=0)

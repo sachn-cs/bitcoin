@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Secp256k1 curve parameters.
 
 Constants defining the secp256k1 elliptic curve:

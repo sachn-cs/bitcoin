@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """ECDSA public-key recovery and signature verification."""
 
 from __future__ import annotations
@@ -20,8 +22,9 @@ PUBKEY_RECOVERY_OFFSET = 27
 HASH_BYTE_LENGTH = 32
 
 
-def recover_public_key(message_hash: bytes, der_signature: bytes,
-                       recovery_flag: int) -> Point:
+def recover_public_key(
+    message_hash: bytes, der_signature: bytes, recovery_flag: int
+) -> Point:
     """Recover the ECDSA public key from a signature and recovery ID.
 
     Uses the standard ECDSA public-key recovery formula:
@@ -49,6 +52,7 @@ def recover_public_key(message_hash: bytes, der_signature: bytes,
         r_y = FIELD_PRIME - r_y
 
     from bitcoin.curve.point import Point
+
     r_point = Point(x=r, y=r_y)
 
     if not is_on_curve(r_point):
@@ -60,6 +64,7 @@ def recover_public_key(message_hash: bytes, der_signature: bytes,
 
     # Q = r^(-1) * (s * R - e * G) = s * r^(-1) * R + (-e) * r^(-1) * G
     from bitcoin.field import inverse
+
     r_inv = inverse(r, CURVE_ORDER)
 
     r1 = multiply((s * r_inv) % CURVE_ORDER, r_point)
@@ -77,8 +82,9 @@ def constant_time_eq(a: bytes, b: bytes) -> bool:
     return hmac.compare_digest(a, b)
 
 
-def verify_signature(message_hash: bytes, der_signature: bytes,
-                     public_key: Point) -> bool:
+def verify_signature(
+    message_hash: bytes, der_signature: bytes, public_key: Point
+) -> bool:
     """Verify an ECDSA signature against a public key.
 
     Args:
@@ -109,6 +115,7 @@ def verify_signature(message_hash: bytes, der_signature: bytes,
         return False
 
     from bitcoin.field import inverse
+
     s_inv = inverse(s, CURVE_ORDER)
     u1 = (e * s_inv) % CURVE_ORDER
     u2 = (r * s_inv) % CURVE_ORDER

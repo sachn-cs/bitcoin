@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Miniscript descriptor analysis.
 
 Extracts public keys, determines script type, and computes
@@ -25,6 +27,7 @@ class DescriptorInfo:
         satisfaction_bytes: Estimated minimum satisfaction size in
             bytes (witness stack + scriptSig).
     """
+
     script_type: str
     keys: list[str] = field(default_factory=list)
     has_timelock: bool = False
@@ -33,15 +36,15 @@ class DescriptorInfo:
 
 
 _ESTIMATED_SATISFACTION: dict[str, int] = {
-    "pk":        73 + 1,      # signature + sig length
-    "pkh":       73 + 33 + 2, # sig + pubkey + lengths
-    "wpkh":      73 + 33,     # sig + pubkey (witness)
-    "sha256":    32 + 1,      # preimage (witness)
-    "hash256":   32 + 1,
+    "pk": 73 + 1,  # signature + sig length
+    "pkh": 73 + 33 + 2,  # sig + pubkey + lengths
+    "wpkh": 73 + 33,  # sig + pubkey (witness)
+    "sha256": 32 + 1,  # preimage (witness)
+    "hash256": 32 + 1,
     "ripemd160": 20 + 1,
-    "hash160":   20 + 1,
-    "older":     0,           # just nSequence
-    "after":     0,           # just nLockTime
+    "hash160": 20 + 1,
+    "older": 0,  # just nSequence
+    "after": 0,  # just nLockTime
 }
 
 
@@ -58,6 +61,7 @@ def analyze_descriptor(expr: str) -> DescriptorInfo:
         DescriptorError: If the expression cannot be parsed.
     """
     from bitcoin.descriptor.compiler import DescriptorError
+
     try:
         ast = parse_descriptor(expr)
     except DescriptorError:
@@ -67,8 +71,7 @@ def analyze_descriptor(expr: str) -> DescriptorInfo:
     has_timelock = False
     has_hash_lock = False
     satisfaction = 0
-    _collect_info(ast, keys, has_timelock=has_timelock,
-                  has_hash_lock=has_hash_lock)
+    _collect_info(ast, keys, has_timelock=has_timelock, has_hash_lock=has_hash_lock)
 
     satisfaction = _estimate_satisfaction(ast)
     return DescriptorInfo(

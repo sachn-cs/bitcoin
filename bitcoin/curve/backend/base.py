@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Abstract interface for pluggable secp256k1 backends."""
 
 from __future__ import annotations

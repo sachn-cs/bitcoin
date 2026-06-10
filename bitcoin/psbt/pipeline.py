@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Multi-process PSBT processing pipeline.
 
 Handles batch parsing, validation, and extraction from multiple PSBT
@@ -29,6 +31,7 @@ class PsbtBatchResult:
         successful: Number successfully parsed.
         failed: Number that raised an exception.
     """
+
     psbts: list[Psbt] = field(default_factory=list)
     errors: list[tuple[str, str]] = field(default_factory=list)
     total: int = 0
@@ -62,8 +65,9 @@ def process_psbt_batch(
         A ``PsbtBatchResult`` aggregating all parsed PSBTs and errors.
     """
     rid = request_id or uuid.uuid4().hex[:12]
-    logger.info("[%s] Processing %d PSBT files (%d workers).",
-                rid, len(paths), max_workers)
+    logger.info(
+        "[%s] Processing %d PSBT files (%d workers).", rid, len(paths), max_workers
+    )
 
     all_psbts: list[Psbt] = []
     errors: list[tuple[str, str]] = []
@@ -84,8 +88,7 @@ def process_psbt_batch(
                 try:
                     worker_result = future.result()
                 except Exception as exc:
-                    logger.warning("[%s] Worker exception for %s: %s",
-                                   rid, path, exc)
+                    logger.warning("[%s] Worker exception for %s: %s", rid, path, exc)
                     errors.append((path, str(exc)))
                     continue
                 if isinstance(worker_result, tuple):
@@ -101,8 +104,12 @@ def process_psbt_batch(
         successful=successful,
         failed=len(paths) - successful,
     )
-    logger.info("[%s] PSBT batch complete: %d / %d successful.",
-                rid, batch_result.successful, batch_result.total)
+    logger.info(
+        "[%s] PSBT batch complete: %d / %d successful.",
+        rid,
+        batch_result.successful,
+        batch_result.total,
+    )
     return batch_result
 
 
@@ -128,8 +135,7 @@ def process_psbt_batch_with(
     Returns:
         A ``PsbtBatchResult`` with the transformed Psbts.
     """
-    raw = process_psbt_batch(paths, max_workers=max_workers,
-                             request_id=request_id)
+    raw = process_psbt_batch(paths, max_workers=max_workers, request_id=request_id)
     transformed: list[Psbt] = []
     for psbt in raw.psbts:
         try:

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Immutable collection of extracted signature records."""
 
 from __future__ import annotations

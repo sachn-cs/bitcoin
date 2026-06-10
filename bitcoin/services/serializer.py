@@ -1,3 +1,5 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Transaction serialisation to Bitcoin wire format.
 
 Provides SegWit-aware serialisation (``serialize_tx``), legacy
@@ -70,29 +72,28 @@ def tx_to_json(tx: Tx) -> dict[str, Any]:
         A dict representing the full transaction structure.
     """
     return {
-        "txid":
-            encode_hex(tx.txid()),
-        "version":
-            tx.version,
-        "lock_time":
-            tx.lock_time,
-        "inputs": [{
-            "txid":
-                encode_hex(txin.previous_output.txid),
-            "vout":
-                txin.previous_output.vout,
-            "script_sig":
-                encode_hex(txin.script_sig),
-            "sequence":
-                txin.sequence,
-            "witness": [encode_hex(w)
-                        for w in txin.witness.items] if txin.witness.items else None,
-        }
-                   for txin in tx.inputs],
-        "outputs": [{
-            "value": txout.value,
-            "script_pubkey": encode_hex(txout.script_pubkey),
-        } for txout in tx.outputs],
+        "txid": encode_hex(tx.txid()),
+        "version": tx.version,
+        "lock_time": tx.lock_time,
+        "inputs": [
+            {
+                "txid": encode_hex(txin.previous_output.txid),
+                "vout": txin.previous_output.vout,
+                "script_sig": encode_hex(txin.script_sig),
+                "sequence": txin.sequence,
+                "witness": [encode_hex(w) for w in txin.witness.items]
+                if txin.witness.items
+                else None,
+            }
+            for txin in tx.inputs
+        ],
+        "outputs": [
+            {
+                "value": txout.value,
+                "script_pubkey": encode_hex(txout.script_pubkey),
+            }
+            for txout in tx.outputs
+        ],
     }
 
 
@@ -126,8 +127,9 @@ def serialize_legacy_tx(tx: Tx) -> bytes:
     return bytes(data)
 
 
-def serialize_legacy_tx_for_sighash(tx: Tx, input_index: int, script: bytes,
-                                    flag: int) -> bytes:
+def serialize_legacy_tx_for_sighash(
+    tx: Tx, input_index: int, script: bytes, flag: int
+) -> bytes:
     """Serialise a transaction for legacy sighash computation.
 
     Produces the pre-image that is double-SHA256 hashed to produce the

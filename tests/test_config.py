@@ -1,4 +1,7 @@
+# Copyright (c) 2026 secp contributors
+# SPDX-License-Identifier: MIT
 """Tests for the Settings singleton."""
+
 from __future__ import annotations
 
 import pytest
